@@ -135,7 +135,7 @@ The project has the necessary settings by default, so you can go to the [Operati
 
    Default location: */ModusToolbox/tools_3.0/fw-loader/bin*
 
-   Select SWD mode by running the `Select_SWD` batch file to program the CY8CKIT-040T kit. For detailed information, see **Step 3** of **Section 2.3** in [CY8CKIT-040T kit user guide](www.infineon.com/002-34870).
+   Select SWD mode by running the `Select_SWD` batch file to program the CY8CKIT-040T kit. For detailed information, see **Section 2.3.1** in [CY8CKIT-040T kit user guide](www.infineon.com/002-34870).
 
 3. Program the board using one of the following:
 
@@ -183,7 +183,7 @@ The project has the necessary settings by default, so you can go to the [Operati
 
 2. Open CAPSENSE&trade; Tuner from the **Tools** section in the IDE Quick Panel.
 
-   You can also run the CAPSENSE&trade; Tuner application standalone from the *{ModusToolbox&trade; install directory}/ModusToolbox/tools_{version}/capsense-configurator/capsense-tuner*. In this case, after opening the application, select **File** > **Open** and open the *design.cycapsense* file of the respective application, which is present in the *{Application root directory}/COMPONENT_CUSTOM_DESIGN_MODUS/TARGET_\<BSP-NAME>* folder.
+   You can also run the CAPSENSE&trade; Tuner application standalone from the *{ModusToolbox&trade; install directory}/ModusToolbox/tools_{version}/capsense-configurator/capsense-tuner*. In this case, after opening the application, select **File** > **Open** and open the *design.cycapsense* file of the respective application, which is present in the *{Application root directory}/bsps/TARGET_APP_\<BSP-NAME>/COMPONENT_BSP_DESIGN_MODUS/* folder.
 
 	See the [ModusToolbox&trade; user guide](https://www.cypress.com/ModusToolboxUserGuide) (locally available at *{ModusToolbox&trade; install directory}/docs_{version}/mtb_user_guide.pdf*) for options to open the CAPSENSE&trade; Tuner application using the CLI.
 
@@ -237,11 +237,11 @@ The project has the necessary settings by default, so you can go to the [Operati
 
    Set the macros `SWD_DEBUG_ENABLE` and `ENABLE_SERIAL_LED` in *main.c* as follows:
 
-   ```
-   #define SWD_DEBUG_ENABLE                 (1u)
+    ```
+      #define SWD_DEBUG_ENABLE                 (1u)
 
-   #define ENABLE_SERIAL_LED                (0u)
-   ```
+      #define ENABLE_SERIAL_LED                (0u)
+    ```
 
 2. After programming, run the `Select_No_Connection` batch file to completely disconnect the MCU from the onboard KitProg.
 
@@ -263,9 +263,9 @@ The project has the necessary settings by default, so you can go to the [Operati
 
 7. The ILO clock is used to control the refresh rate in this project. This clock is expected to have up to 50% variation across different PSoC&trade; 4000T devices. Measure the actual ILO clock frequency and update the macro `MEASURED_ILO_IN_KHz` in *main.c* as follows:
 
-   ```
-   #define MEASURED_ILO_IN_KHz              (40u)
-   ```
+    ```
+      #define MEASURED_ILO_IN_KHz              (40u)
+    ```
 
 ## Tuning procedure
 
@@ -273,7 +273,7 @@ The project has the necessary settings by default, so you can go to the [Operati
 
 1. Create a custom BSP for your board having any device by following the steps given in [KBA231373](https://community.cypress.com/t5/Knowledge-Base-Articles/ModusToolbox-2-2-and-later-Make-a-Custom-BSP-KBA231373/ta-p/251107). In this code example, it was created for the device "CY8C4046LQI-T452”.
 
-2. Open the *design.modus* file from *{Application root directory}/TARGET_\<BSP-NAME>/COMPONENT_BSP_DESIGN_MODUS* folder obtained in the previous step and enable CAPSENSE&trade; to get the *design.cycapsense* file. The CAPSENSE&trade; configuration can then be started from scratch as follows:
+2. Open the *design.modus* file from *{Application root directory}/bsps/TARGET_APP_\<BSP-NAME>/COMPONENT_BSP_DESIGN_MODUS/* folder obtained in the previous step and enable CAPSENSE&trade; to get the *design.cycapsense* file. The CAPSENSE&trade; configuration can then be started from scratch as follows:
 
 ### Tuning parameters
 
@@ -305,10 +305,10 @@ You can debug the example to step through the code. In the IDE, use the **\<Appl
 
    2. Enable the **SWD_DEBUG_ENABLE** macro present in the *main.c* file as follows:
 
-      ```
-      #define SWD_DEBUG_ENABLE (1u)
-      ```
-   See **Step 4** in Section 2.3 of the [kit user guide](www.infineon.com/002-34870) for more details.
+       ```
+         #define SWD_DEBUG_ENABLE (1u)
+       ```
+   See **Step 4** of **Section 2.3** of the [kit user guide](www.infineon.com/002-34870) for more details.
 
 
 ## Design and implementation
@@ -437,6 +437,7 @@ Document title: *CE234752* – *PSoC&trade; 4: MSCLP robust low-power liquid-tol
 | Version | Description of change |
 | ------- | --------------------- |
 | 1.0.0   | New code example      |
+| 1.0.1   | Minor text update in Read Me    |
 
 ------
 
