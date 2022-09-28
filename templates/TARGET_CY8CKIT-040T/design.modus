@@ -4,11 +4,6 @@
     <Devices>
         <Device mpn="CY8C4046LQI-T452">
             <BlockConfig>
-                <Block location="cpuss[0].dap[0]">
-                    <Personality template="m0s8dap" version="1.0">
-                        <Param id="dbgMode" value="NONE"/>
-                    </Personality>
-                </Block>
                 <Block location="ioss[0].port[0].pin[0]">
                     <Alias value="CYBSP_CSX_TP_RX4"/>
                     <Personality template="m0s8pin" version="2.0">
@@ -261,7 +256,7 @@
                         <Param id="SensorName9" value="TOUCHPAD_Row1"/>
                         <Param id="SensorName10" value="TOUCHPAD_Row2"/>
                         <Param id="SensorName11" value="TOUCHPAD_Row3"/>
-                        <Param id="SensorName12" value="GUARD_SENSOR_Sns0"/>
+                        <Param id="SensorName12" value="GUARD_LOOP_SENSOR_Sns0"/>
                         <Param id="CapacitorName0" value="Cmod1"/>
                         <Param id="CapacitorName1" value="Cmod2"/>
                     </Personality>

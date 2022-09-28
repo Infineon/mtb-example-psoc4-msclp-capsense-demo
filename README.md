@@ -1,12 +1,10 @@
 # PSoC&trade; 4: MSCLP robust low-power liquid-tolerant CAPSENSE&trade;
 
-This code example implements a low-power, liquid-tolerant, and robust capacitive sensing solution with [PSoC&trade; 4000T](www.infineon.com/002-33949) device using the [CY8CKIT-040T CAPSENSE&trade; evaluation kit](https://www.infineon.com/CY8CKIT-040T).
+This code example implements a low-power, liquid-tolerant, and robust capacitive sensing solution with the [PSoC&trade; 4000T](www.infineon.com/002-33949) device using the [CY8CKIT-040T CAPSENSE&trade; evaluation kit](https://www.infineon.com/CY8CKIT-040T).
 
-This code example demonstrates the advanced features of multi-sense convertor low-power (MSCLP), the 5th-generation low-power CAPSENSE&trade; block in [PSoC&trade; 4000T](www.infineon.com/002-33949). This kit has onboard capacitive sensors (a self-cap touch button, proximity sensor, and a touchpad) that operate in ultra-low-power mode and only respond to a valid finger touch. The sensors are deactivated when there is any liquid present on the sensors. The kit has onboard LEDs to indicate different touch operations.
+This code example demonstrates advanced features of multi-sense convertor low-power (MSCLP), the 5th-generation low-power CAPSENSE&trade; block in [PSoC&trade; 4000T](www.infineon.com/002-33949). This kit has onboard capacitive sensors (a self-cap touch button, proximity sensor, and a touchpad) that operate in ultra-low-power mode and only respond to a valid finger touch. The sensors are deactivated when there is any liquid present on the sensors. The kit has onboard LEDs to indicate different touch operations.
 
 Use only the [CY8CKIT-040T](https://www.infineon.com/CY8CKIT-040T) kit for testing this code example.
-
-**Note:** This code example is currently at the Preliminary level. The implemented liquid tolerance feature for avoiding false touches works with spray and small liquid droplets. A large puddle or stream of liquid may cause false sensor activation. This will be fixed in the future version of the code example.
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-psoc4-msclp-capsense-demo)
 
@@ -24,7 +22,7 @@ Use only the [CY8CKIT-040T](https://www.infineon.com/CY8CKIT-040T) kit for testi
 
 ## Supported toolchains (make variable 'TOOLCHAIN')
 
-- GNU Arm® Embedded compiler v10.3.1 (`GCC_ARM`) - Default value of `TOOLCHAIN`
+- GNU Arm® Embedded Compiler v10.3.1 (`GCC_ARM`) - Default value of `TOOLCHAIN`
 - Arm&reg; Compiler v6.13 (`ARM`)
 - IAR C/C++ Compiler v8.42.2 (`IAR`)
 
@@ -168,13 +166,23 @@ The project has the necessary settings by default, so you can go to the [Operati
       - LED1 brightness increases when finger is swiped from left to right.
       - LED3 brightness increases when finger is swiped from bottom to up.
 
-5. Place water droplets on top of the sensors using a water dropper. Observe that all LEDs are in OFF state indicating that no false trigger occurs due to the presence of water. See [kit user guide](www.infineon.com/002-34870) to know more on the test procedure.
+5. Use a water dropper (shipped with the kit package) to place water droplets on top of the sensors. Observe that all LEDs are in OFF state indicating that no false trigger occurs due to the presence of water. See [kit user guide](www.infineon.com/002-34870) to know more on the test procedure.
 
 6. Spray water over the sensors. Observe that false touches are not reported and LEDs do not turn ON. See the [kit user guide](www.infineon.com/002-34870) to know more on the test procedure.
 
    **Figure 2. Spraying water on top of the sensors**
 
    <img src="images/psoc_4000t_sensors_water_spray.png" alt="Figure 2" width="450"/>
+
+7. Splash water on top of the sensors. Observe that false touches are not reported.
+
+8. Dip the kit inside water (up to the immersible line) for some time and remove it. Repeat it multiple times. Observe that all LEDs are in OFF state continuously, indicating that no false trigger occurs due to immersion in water.
+
+   **Figure 3. Immersing the kit inside water (up to immersible line)**
+
+   <img src="images/psoc_4000t_sensors_water_dip.png" alt="Figure 3" width="450"/>
+
+9. Perform experiments mentioned in step 5, 6, 7 and 8 using salty water. Observe that all LEDs are in OFF state continuously, indicating that no false trigger occurs due to immersion. It is recommended that testing the liquid-tolerance performance of the sensors with the salty water by dissolving 40 grams of cooking salt (NaCl) in one liter of water.
 
 
 ### Monitor the data using the CAPSENSE&trade; Tuner
@@ -197,9 +205,9 @@ The project has the necessary settings by default, so you can go to the [Operati
 
    These are the same values set in the EZI2C resource.
 
-   **Figure 3. Tuner communication setup**
+   **Figure 4. Tuner communication setup**
 
-   <img src="images/tuner_setup.png" alt="Figure 3" width="500" />
+   <img src="images/tuner_setup.png" alt="Figure 4" width="500" />
 
 5. Click **Connect** or select **Communication** > **Connect** to establish a connection.
 
@@ -209,27 +217,27 @@ The project has the necessary settings by default, so you can go to the [Operati
 
 7. Set **Read Mode** to 'Synchronized'. Under the **Widget View** tab, you can see the different sensor widgets highlighted in blue when you touch it.
 
-   **Figure 4. Widget view of CAPSENSE&trade; Tuner**
+   **Figure 5. Widget view of CAPSENSE&trade; Tuner**
 
-   <img src="images/widget-view.png" alt="Figure 4" width="900"/>
+   <img src="images/widget-view.png" alt="Figure 5" width="900"/>
 
-8. You can view the raw count, baseline, difference count, and status for each sensor, and the touchpad position in the **Graph View** tab. To view the sensor data for button, select **BUTTON_Sns0** under **BUTTON** (see  Figure 5). To view the touchpad sensor data, select **TOUCHPAD_Col0** under **TOUCHPAD** (see Figure 6).
+8. You can view the raw count, baseline, difference count, and status for each sensor, and the touchpad position in the **Graph View** tab. To view the sensor data for a button, select **BUTTON_Sns0** under **BUTTON** (see Figure 6). To view the touchpad sensor data, select **TOUCHPAD_Col0** under **TOUCHPAD** (see Figure 7).
 
-   **Figure 5. Graph view of button signals in CAPSENSE&trade; Tuner**
+   **Figure 6. Graph view of button signals in CAPSENSE&trade; Tuner**
 
-   <img src="images/graph_view_button_response.png" alt="Figure 5" width="900"/>
+   <img src="images/graph_view_button_response.png" alt="Figure 6" width="900"/>
 
-   **Figure 6. Graph view of touchpad signals in CAPSENSE&trade; Tuner**
+   **Figure 7. Graph view of touchpad signals in CAPSENSE&trade; Tuner**
 
-   <img src="images/graph_view_touchpad_response.png" alt="Figure 6" width="900"/>
+   <img src="images/graph_view_touchpad_response.png" alt="Figure 7" width="900"/>
 
 9. Go to the **Touchpad View** tab to view the heatmap, which visualizes the finger movement.
 
-   **Figure 7. Touchpad view of CAPSENSE&trade; Tuner**
+   **Figure 8. Touchpad view of CAPSENSE&trade; Tuner**
 
-   <img src="images/touchpad-view.png" alt="Figure 7" width="900"/>
+   <img src="images/touchpad-view.png" alt="Figure 8" width="900"/>
 
-10. Go to the **Widget/Sensor Parameters** section in the CAPSENSE&trade; Tuner window. The compensation CDAC values for each touchpad sensor element calculated by the CAPSENSE&trade; resource is displayed as shown in Figure 7.
+10. Go to the **Widget/Sensor Parameters** section in the CAPSENSE&trade; Tuner window. The compensation CDAC values for each touchpad sensor element calculated by the CAPSENSE&trade; resource is displayed as shown in Figure 8.
 
 ### Measure current at different application states
 
@@ -245,23 +253,34 @@ The project has the necessary settings by default, so you can go to the [Operati
 
 2. After programming, run the `Select_No_Connection` batch file to completely disconnect the MCU from the onboard KitProg.
 
-3. Connect an ammeter to the **Current measurement** header to measure the current consumption for different application states (see Figure 8). To know more on the setup, see the [kit user guide](www.infineon.com/002-34870).
+3. Connect an ammeter to the **Current measurement** header to measure the current consumption for different application states (see Figure 10). To know more on the setup, see the [kit user guide](www.infineon.com/002-34870).
 
-   **Figure 8. Current measurement setup**
+   **Figure 9. Current measurement setup**
 
-   <img src="images/psoc_4000t_kit_ammeter_setup.png" alt="Figure 8" width="350"/>
+   <img src="images/psoc_4000t_kit_ammeter_setup.png" alt="Figure 9" width="350"/>
 
-4. When there is any touch in one of the sensors, the device is in Active state. Measure the device current during the active state of operation. If the refresh rate is set to 128 Hz, the approximate device current would be 338 uA (see Figure 9).
+4. When there is any touch on one of the sensors, the device is in Active state. Measure the device current during the active state of operation. If the refresh rate is set to 128 Hz, the approximate device current would be 525uA when the touchpad is touched (see Figure 10).
 
-   **Figure 9. Power consumption profile of PSoC&trade; 4000T**
+   **Figure 10. Power consumption profile of PSoC&trade; 4000T**
 
-   <img src="images/psoc_4000t_current_results.png" alt="Figure 9" width="700"/>
+   <img src="images/psoc_4000t_current_results.png" alt="Figure 10" width="700"/>
 
-5. When there is no touch on any of the sensors for some time, the CAPSENSE&trade; block moves to a state called "Active low refresh rate". If the refresh rate of this state is set to 32 Hz, the approximate device current would be 83 uA.
+5. When there is no touch on any of the sensors for some time, the CAPSENSE&trade; block moves to a state called "Active low refresh rate". If the refresh rate of this state is set to 32 Hz, the approximate device current would be 130 uA.
 
-6. Further inactivity on any of the sensors moves CAPSENSE&trade; block to the lowest power state. The device current in this state is approximately 7 uA if the refresh rate is set to 16 Hz.
+6. Further inactivity on any of the sensors moves the CAPSENSE&trade; block to the lowest power state. The device current in this state is approximately 7 uA if the refresh rate is set to 16 Hz. The following table shows the current values measured for VDD=1.8 V:
 
-7. The ILO clock is used to control the refresh rate in this project. This clock is expected to have up to 50% variation across different PSoC&trade; 4000T devices. Measure the actual ILO clock frequency and update the macro `MEASURED_ILO_IN_KHz` in *main.c* as follows:
+
+**Table 1. Device current at different application states**
+
+|  Application State | Refresh Rate(Hz)| Current (in uA) of the default code example | Current (in uA) with serial LED and EZI2C disabled |
+| :--------| :---------------|:---------------------| :------------------- |
+| Wake on Touch | 16 | 7  | 7 |
+| Active low refresh rate | 32 | 140 | 130 |
+| Active | 128 | 690 |  525 |
+
+
+7. The ILO clock is used to control the refresh rate in this project. This clock is expected to have up to 50% variation across different PSoC&trade; 4000T devices. Measure the actual ILO clock frequency and update the `MEASURED_ILO_IN_KHz` macro in *main.c*. For details see the document ***PSoC™ 4000T device current measurement –
+KBA235704***.
 
     ```
       #define MEASURED_ILO_IN_KHz              (40u)
@@ -281,13 +300,15 @@ This code example has the optimum tuning parameters of all the sensors. See the 
 
 1. [CE235178](https://github.com/Infineon/mtb-example-psoc4-msclp-self-capacitance-button) for self-cap button tuning procedure
 
-2. [CE235111](https://github.com/Infineon/mtb-example-psoc4-msclp-capsense-low-power) for tuning the low-power widget of the [PSoC&trade; 4000T](www.infineon.com/002-33949) device
+2. [CE235338](https://github.com/Infineon/mtb-example-psoc4-msclp-self-capacitance-touchpad) for self-cap touchpad tuning procedure
+
+3. [CE235111](https://github.com/Infineon/mtb-example-psoc4-msclp-capsense-low-power) for tuning the low-power widget of the [PSoC&trade; 4000T](www.infineon.com/002-33949) device
 
 The inactive sensors and the hatch pattern in both the planes of the PCB is by default assigned to the active shield. This increases the sensitivity of the sensors and is required for implementing liquid tolerance for sensors.
 
-**Figure 10. Enabling shield signals in CAPSENSE&trade; Configurator**
+**Figure 11. Enabling shield signals in CAPSENSE&trade; Configurator**
 
-<img src="images/psoc_4000t_shield_settings.png" alt="Figure 10" width="700"/>
+<img src="images/psoc_4000t_shield_settings.png" alt="Figure 11" width="700"/>
 
 **Note:** See the "Selecting CAPSENSE&trade; hardware parameters" section in the [AN85951 – PSoC&trade; 4 and PSoC&trade; 6 MCU CAPSENSE&trade; design guide](https://www.cypress.com/an85951) to learn about the considerations for selecting parameter values.
 
@@ -317,16 +338,17 @@ The project uses the [CAPSENSE&trade; middleware](https://infineon.github.io/cap
 
 See [AN85951 – PSoC&trade; 4 and PSoC&trade; 6 MCU CAPSENSE&trade; design guide](https://www.cypress.com/an85951) for more details of CAPSENSE&trade; features and usage.
 
-The design has ratiometric self-capacitance (CSD-RM)-based implementation of the following sensors, as shown in Figure 11.
+The design has a ratiometric implementation of the following sensors, as shown in Figure 13.
 
 1. One touchpad widget with 9 elements (4 rows and 5 columns)
 2. One self-capacitance button widget (1 element)
 3. One Wake-On-Touch widget (1 element), also called "low-power widget"
-4. Proximity sensor of the board configured as a Guard sensor (1 element)
+4. Proximity sensor of the board configured as a self-capacitance guard sensor (1 element)
+5. Multiple combinations of proximity and touchpad sensors configured as mutual-cap guard sensors (7 elements)
 
-**Figure 11. Widgets in CAPSENSE&trade; Configurator**
+**Figure 12. Widgets in CAPSENSE&trade; Configurator**
 
-<img src="images/cy8ckit-040t-sensor-widgets.png" alt="Figure 11" width="700"/>
+<img src="images/cy8ckit-040t-sensor-widgets.png" alt="Figure 12" width="700"/>
 
 The design also has an EZI2C peripheral and a SPI master peripheral.
 
@@ -341,9 +363,9 @@ The firmware is designed to support the following CAPSENSE&trade; states by usin
 - Wake-on-touch state
 - Liquid active state
 
-**Figure 12. State machine showing different CAPSENSE&trade; states**
+**Figure 13. State machine showing different CAPSENSE&trade; states**
 
-<img src="images/psoc_4000t_simple_state_machine.png" alt="Figure 12" width="400"/>
+<img src="images/psoc_4000t_simple_state_machine.png" alt="Figure 13" width="400"/>
 
 The firmware state machine and the operation of the device in four different states are explained in the following steps:
 
@@ -365,7 +387,7 @@ The firmware state machine and the operation of the device in four different sta
 
 4. Enters the Wake-on-touch state when there is no touch detected in the Active low-refresh rate state for a timeout period. In this state, the CPU completely moves to deep sleep, and doesn't get involved in CAPSENSE&trade; operation. This is the lowest power state of the device. In the Wake-on-touch state, the CAPSENSE&trade; hardware executes the scanning of the selected sensors called "low-power widgets" and processes the scan data for these widgets. If any touch detected, the CAPSENSE&trade; block wakes up the CPU and the device moves to the Active state.
 
-5. Enters the 'Liquid Active' State when the guard sensor is activated. The guard sensor is used to detect the presence of large volumes of liquid on the board. When the [CY8CKIT-040T](https://www.infineon.com/CY8CKIT-040T) kit is dipped inside liquid, the signal count of the guard sensor becomes significantly higher than normal finger touch. Then the device moves into the "Liquid Active" state. In this state, no other sensors other than the guard sensor is scanned. This state restricts normal scan operation and avoids any false touch by deactivating the scan operation of active sensors. When the large volume of liquid is removed from the senor, CAPSENSE&trade; moves to the Active state.
+5. Enters the 'Liquid Active' state when one of the guard sensors is activated. The guard sensors are used to detect the presence of liquid on the board. When the [CY8CKIT-040T](https://www.infineon.com/CY8CKIT-040T) kit is dipped inside liquid, or liquid is sprayed on the sensors, the response of one of the guard sensors becomes different from normal finger touch. Then the device moves into the "Liquid Active" state. In this state, no other sensors other than the guard sensor is scanned. This state restricts normal scan operation and avoids any false touch by deactivating the scan operation of active sensors. When the liquid is removed from the senor, CAPSENSE&trade; moves to the Active state.
 
 There are three onboard LEDs connected to the SPI MOSI pin of the device. The three LEDs form a daisy-chain connection and the communication happens over the serial interface to create an RGB configuration. The LED accepts a 32-bit input code, with three bytes for red, green, and blue color.
 
@@ -375,28 +397,28 @@ There are three onboard LEDs connected to the SPI MOSI pin of the device. The th
 
 2. Go to the **System** tab. Select the **Power** resource, and set the VDDA value under **Operating Conditions** as follows:
 
-   **Figure 13. Setting the VDDA supply in the System tab of Device Configurator**
+   **Figure 14. Setting the VDDA supply in the System tab of Device Configurator**
 
-   <img src="images/vdda-settings.png" alt="Figure 13" width="700"/>
+   <img src="images/vdda-settings.png" alt="Figure 14" width="700"/>
 
 **Note:** [PSoC&trade; 4000T CAPSENSE&trade; evaluation kit](https://www.infineon.com/CY8CKIT-040T) has one onboard regulator that generates 1.8 V. Check the VDDA voltage and VDDD voltage in Device Configurator - Systems tab to 1800 mV. See the [kit user guide](www.infineon.com/002-34870) for more details.
 
 
 ### Resources and settings
 
-**Figure 14. Device Configurator - EZI2C peripheral parameters**
+**Figure 15. Device Configurator - EZI2C peripheral parameters**
 
- <img src="images/ezi2c_config.png" alt="Figure 14" width="600"/>
+ <img src="images/ezi2c_config.png" alt="Figure 15" width="600"/>
 
 <br>
 
-**Figure 15. Device Configurator - SPI peripheral parameters for serial LEDs**
+**Figure 16. Device Configurator - SPI peripheral parameters for serial LEDs**
 
- <img src="images/spi_serial_led_configuration.png" alt="Figure 15" width="700"/>
+ <img src="images/spi_serial_led_configuration.png" alt="Figure 16" width="700"/>
 
 The following ModusToolbox&trade; software resources are used in this example:
 
-**Table 1. Application resources**
+**Table 2. Application resources**
 
 | Resource  |  Alias/object     |    Purpose     |
 | :------- | :------------    | :------------ |
@@ -407,9 +429,9 @@ The following ModusToolbox&trade; software resources are used in this example:
 
 ### Firmware flow
 
-**Figure 16. Firmware flowchart**
+**Figure 17. Firmware flowchart**
 
-<img src="images/psoc_4000t_firmware_state_machine.png" alt="Figure 16" width="800"/>
+<img src="images/psoc_4000t_firmware_state_machine.png" alt="Figure 17" width="800"/>
 
 
 ## Related resources
@@ -438,6 +460,7 @@ Document title: *CE234752* – *PSoC&trade; 4: MSCLP robust low-power liquid-tol
 | ------- | --------------------- |
 | 1.0.0   | New code example      |
 | 1.0.1   | Minor text update in Read Me    |
+| 1.1.0   | Updated with additional logic for improving liquid tolerance, added Table 1 with updated current consumption value |
 
 ------
 

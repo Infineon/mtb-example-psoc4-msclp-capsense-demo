@@ -2,7 +2,7 @@
 * File Name:   main.c
 *
 * Description: This is the source code for the MSCLP Robust Low-Power
-*              Liquid-Tolerant CAPSENSE code example for ModusToolbox
+*              Liquid-Tolerant CAPSENSE TM code example for ModusToolbox
 *
 * Related Document: See README.md
 *
@@ -83,6 +83,9 @@
 #define CY_ASSERT_FAILED                        (0u)
 #define MSCLP_CAPSENSE_WIDGET_INACTIVE          (0u)
 
+/* Setting self-cap sensors raw-count calibration percentage to 70% */
+#define CUSTOM_CSD_CALIBRATION_LEVEL            (70u)
+
 /* EZI2C interrupt priority must be higher than CAPSENSE interrupt. */
 #define EZI2C_INTR_PRIORITY                     (2u)
 
@@ -109,14 +112,28 @@
     #define ACTIVE_LOW_REFRESH_TIMER            (0u)
 #endif
 
-/* Define Timeout of the two CAPSENSE states depending upon
+/* Define Time out of different applications states depending upon
  * number of scans and corresponding refresh rate */
 #define ACTIVE_MODE_TIMEOUT                     (ACTIVE_MODE_TIMEOUT_IN_SEC * ACTIVE_MODE_REFRESH_RATE_SCALED)
 #define ACTIVE_LOW_REFRESH_TIMEOUT              (ACTIVE_LOW_REFRESH_TIMEOUT_IN_SEC * ACTIVE_LOW_REFRESH_RATE_SCALED)
+#define LIQUID_ACTIVE_MODE_TIMEOUT              (0u)
 
-/* Define the conditions to check sensor status and liquid presence state */
+/* macros indicating touch / no-touch status of all sensors */
 #define SENSOR_ACTIVE                           (1u)
+#define SENSOR_INACTIVE                         (0u)
+
+/* Define the macros specific for the Guard sensors and conditions to check liquid active state */
+#define GUARD_SENSOR_SELF_CAP_ACTIVE            (1u)
+#define GUARD_SENSOR_MUTUAL_CAP_GANGED_ACTIVE   (2u)
+#define GUARD_SENSOR_MUTUAL_CAP_LEFT_ACTIVE     (3u)
+#define GUARD_SENSOR_MUTUAL_CAP_RIGHT_ACTIVE    (4u)
+#define GUARD_SENSOR_MUTUAL_CAP_MID_ACTIVE      (5u)
 #define LIQUID_STATE_ACTIVE                     (1u)
+#define LIQUID_STATE_INACTIVE                   (0u)
+#define SENSOR_CONTEXT_GUARD_MUTUAL_CAP_SENSOR  (12u)
+#define FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE  (CY_CAPSENSE_GUARD_LOOP_SENSOR_FIRST_SLOT_ID)
+#define LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE   (CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL2_FIRST_SLOT_ID)
+#define NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE      (LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE - FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE + 1u)
 
 /*****************************************************************************
 * Finite state machine for different CAPSENSE operating states
@@ -150,15 +167,17 @@ static void initialize_capsense(void);
 static void capsense_msc0_isr(void);
 
 void inactive_sensors_reconfiguration(void * context);
+void initialize_capsense_hardware_filter(CAPSENSE_STATE);
+void hardware_filter_state_trasition(CAPSENSE_STATE);
+uint32_t capsense_liquid_active_state_check();
 
 #if ENABLE_EZI2C
 static void initialize_capsense_tuner(void);
 static void ezi2c_isr(void);
-static void tuner_communication_wrapper(CAPSENSE_STATE);
 #endif
 
 #if ENABLE_SERIAL_LED
-void led_control();
+void led_control(CAPSENSE_STATE);
 #endif
 
 /* Deep Sleep Callback function */
@@ -255,7 +274,7 @@ cy_stc_syspm_callback_t deepSleepCb =
 *  - initialize inactive sensor states
 *  - initialize tuner communication
 *  - scan touch input continuously
-*  - switch to different CAPSENSE states
+*  - switch to different CAPSENSE applications(s) states
 *  - serial RGB LED for touch indication
 *
 * Return:
@@ -266,6 +285,7 @@ int main(void)
 {
     cy_rslt_t result;
     uint32_t timeout_counter;
+    uint32_t capsense_liquid_active_state_status;
     CAPSENSE_STATE capsense_state;
 
     /* Initialize the device and board peripherals */
@@ -291,7 +311,6 @@ int main(void)
     }
 
     #else
-
     /* SPI pins drive mode to Analog HighZ */
     Cy_GPIO_SetDrivemode(CYBSP_SERIAL_LED_PORT, CYBSP_SERIAL_LED_NUM, CY_GPIO_DM_ANALOG);
     #endif
@@ -311,28 +330,16 @@ int main(void)
     capsense_state = ACTIVE_STATE;
     timeout_counter = TIMER_RESET;
     Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+    capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
 
-    /* Configure the CIC2 hardware filter for scanning sensors in Active state and Active Low Refresh Rate state*/
-    cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL &=
-            (uint32_t)(~((uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos)));
-    CY_CAPSENSE_WAKE_ON_TOUCH_MAX_RAW_COUNT_VALUE =
-            (CY_CAPSENSE_WAKE_ON_TOUCH_SNS_CLK_VALUE * CY_CAPSENSE_WAKE_ON_TOUCH_NUM_SUBCONVERSIONS_VALUE);
+    /* Initialize CIC1 and CIC2 filter for different CAPSENSE states */
+    initialize_capsense_hardware_filter(capsense_state);
 
-    /* Calibrate all the low power widgets */
-    Cy_CapSense_CalibrateAllLpSlots(&cy_capsense_context);
-
-    /* CIC2 hardware filter is not applied for Wake-On-Touch state  */
-    if (WAKE_ON_TOUCH_STATE != capsense_state)
-    {
-        cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL |=
-            (uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos);
-    }
-
-/*******************************************************************************
-* Start the state-machine to capture the three different states of operation.
-* This is a state-machine implemented to capture 4 different states
-* of CAPSENSE block for this specific application.
-*******************************************************************************/
+    /*******************************************************************************
+    * Start the state-machine to capture different states of operation.
+    * This is a state-machine implemented to capture 4 different states
+    * of CAPSENSE block for this specific application.
+    *******************************************************************************/
     for (;;)
     {
         switch(capsense_state)
@@ -352,15 +359,22 @@ int main(void)
                 /* Scan, process and check the status of the all Active mode sensors */
                 if (Cy_CapSense_IsAnyWidgetActive(&cy_capsense_context))
                 {
-                    timeout_counter = TIMER_RESET;
+                    /* The function 'capsense_liquid_active_state_check' checks different sensor signals
+                    * to identify presence of liquid on the sensors. If this returns True, the application
+                    * changes from ACTIVE state to LIQUID ACTIVE state
+                    */
+                    capsense_liquid_active_state_status = capsense_liquid_active_state_check();
 
-                    /* if Guard sensor is active, change the state to LIQUID_ACTIVE_STATE*/
-                    if (LIQUID_STATE_ACTIVE ==
-                            Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID, &cy_capsense_context))
+                    if(LIQUID_STATE_INACTIVE != capsense_liquid_active_state_status)
                     {
                         capsense_state = LIQUID_ACTIVE_STATE;
                         timeout_counter = TIMER_RESET;
                         Cy_CapSense_InitializeAllStatuses(&cy_capsense_context);
+
+                        #if ENABLE_SERIAL_LED
+                        /* Serial LED control for showing the CAPSENSE touch status (feedback) */
+                        led_control(LIQUID_ACTIVE_STATE);
+                        #endif
                     }
                 }
 
@@ -380,12 +394,7 @@ int main(void)
 
                 #if ENABLE_SERIAL_LED
                 /* Serial LED control for showing the CAPSENSE touch status (feedback) */
-                led_control();
-                #endif
-
-                #if ENABLE_EZI2C
-                /* Establishes synchronized communication with the CAPSENSE Tuner tool */
-                tuner_communication_wrapper(capsense_state);
+                led_control(ACTIVE_STATE);
                 #endif
 
                 break;
@@ -417,21 +426,14 @@ int main(void)
                     timeout_counter++;
 
                     /* if there is no touch and the timeout happens, change the
-                    * state to ACTIVE_LOW_REFRESH_RATE. Change the hardware filter
+                    * state to WAKE_ON_TOUCH_STATE. Change the hardware filter
                     * from CIC2 to CIC1 for WAKE_ON_TOUCH_STATE mode scan */
                     if (ACTIVE_LOW_REFRESH_TIMEOUT < timeout_counter)
                     {
                         capsense_state = WAKE_ON_TOUCH_STATE;
-                        timeout_counter = TIMER_RESET;
-                        cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL &=
-                                (uint32_t)(~((uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos)));
+                        hardware_filter_state_trasition(capsense_state);
                     }
                 }
-
-                #if ENABLE_EZI2C
-                /* Establishes synchronized communication with the CAPSENSE Tuner tool */
-                tuner_communication_wrapper(capsense_state);
-                #endif
 
                 break;
             }
@@ -453,10 +455,7 @@ int main(void)
                 if (Cy_CapSense_IsAnyLpWidgetActive(&cy_capsense_context))
                 {
                     capsense_state = ACTIVE_STATE;
-                    timeout_counter = TIMER_RESET;
                     Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
-                    cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL |=
-                            (uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos);
                 }
 
                 /* if there is no touch and the timeout happens, change the
@@ -465,16 +464,11 @@ int main(void)
                 else
                 {
                     capsense_state = ACTIVE_LOW_REFRESH_RATE_STATE;
-                    timeout_counter = TIMER_RESET;
                     Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER, &cy_capsense_context);
-                    cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL |=
-                            (uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos);
                 }
 
-                #if ENABLE_EZI2C
-                /* Establishes synchronized communication with the CAPSENSE Tuner tool */
-                tuner_communication_wrapper(capsense_state);
-                #endif
+                timeout_counter = TIMER_RESET;
+                hardware_filter_state_trasition(capsense_state);
 
                 break;
             }
@@ -487,39 +481,43 @@ int main(void)
 
             case LIQUID_ACTIVE_STATE :
             {
-                /* Scan only the slot(s) of the guard sensor(s) that can indicate presence of liquid */
-                Cy_CapSense_ScanSlots(CY_CAPSENSE_GUARD_SENSOR_FIRST_SLOT_ID, CY_CAPSENSE_GUARD_SENSOR_SLOT_SIZE, &cy_capsense_context);
+                Cy_CapSense_ScanSlots(FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE, NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE, &cy_capsense_context);
 
                 while (Cy_CapSense_IsBusy(&cy_capsense_context))
                 {
                     Cy_SysPm_CpuEnterDeepSleep ();
                 }
 
-                /* Process only the guard sensor(s) widget to detect the presence of liquid */
-                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID, &cy_capsense_context);
+                /* Process only the guard sensors widgets to detect the presence of liquid */
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL0_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL0_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL2_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL2_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL4_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL4_WDGT_ID, &cy_capsense_context);
 
-                /* Scan, process and check the status of the all Active mode sensors */
-                if (LIQUID_STATE_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID,
-                        &cy_capsense_context))
+                /* Check the liquid active condition is still valid or not. */
+                capsense_liquid_active_state_status = capsense_liquid_active_state_check();
+
+                if(LIQUID_STATE_INACTIVE != capsense_liquid_active_state_status)
                 {
                     capsense_state = LIQUID_ACTIVE_STATE;
+                    timeout_counter = TIMER_RESET;
                 }
 
                 else
                 {
-                    capsense_state = ACTIVE_STATE;
-                    timeout_counter = TIMER_RESET;
+                    timeout_counter++;
+
+                    if (LIQUID_ACTIVE_MODE_TIMEOUT < timeout_counter)
+                    {
+                        capsense_state = ACTIVE_STATE;
+                        timeout_counter = TIMER_RESET;
+                        capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
+                    }
                 }
-
-                #if ENABLE_SERIAL_LED
-                /* Serial LED control for showing the CAPSENSE touch status (feedback) */
-                led_control();
-                #endif
-
-                #if ENABLE_EZI2C
-                /* Establishes synchronized communication with the CAPSENSE Tuner tool */
-                tuner_communication_wrapper(capsense_state);
-                #endif
 
                 break;
             }
@@ -535,6 +533,14 @@ int main(void)
 
         }
         /* end of switch */
+
+        #if ENABLE_EZI2C
+        /* Establishes synchronized communication with the CAPSENSE Tuner tool */
+        if (CY_CAPSENSE_STATUS_RESTART_DONE == Cy_CapSense_RunTuner(&cy_capsense_context))
+        {
+            initialize_capsense_hardware_filter(capsense_state);
+        }
+        #endif
     }
     /* end of for loop */
 }
@@ -574,6 +580,9 @@ static void initialize_capsense(void)
         NVIC_ClearPendingIRQ(capsense_msc0_interrupt_config.intrSrc);
         NVIC_EnableIRQ(capsense_msc0_interrupt_config.intrSrc);
 
+        /* Setting self-cap sensors raw-count calibration percentage to 70% */
+        Cy_CapSense_SetCalibrationTarget(CUSTOM_CSD_CALIBRATION_LEVEL, CY_CAPSENSE_CSD_GROUP, &cy_capsense_context);
+
         /* Initialize the CAPSENSE firmware modules. */
         status = Cy_CapSense_Enable(&cy_capsense_context);
     }
@@ -611,6 +620,13 @@ static void capsense_msc0_isr(void)
 *  sensor state to be defined in the Cy_CapSense_SlotPinState API and to be
 *  initialized in initialize_capsense.
 *
+*  Parameters:
+*  The pointer to the CAPSENSE&trade; context structure
+*  \ref cy_stc_capsense_context_t.
+*
+* Return:
+* void
+*
 *******************************************************************************/
 void inactive_sensors_reconfiguration(void * context)
 {
@@ -629,10 +645,9 @@ void inactive_sensors_reconfiguration(void * context)
     for (slotId = touchpad_scan_first_slot_Id; slotId <= touchpad_scan_last_slot_Id; slotId++)
     {
         Cy_CapSense_SlotPinState(slotId, &cy_capsense_context.ptrWdConfig
-                [CY_CAPSENSE_GUARD_SENSOR_WDGT_ID].ptrEltdConfig[0u],
+                [CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID].ptrEltdConfig[0u],
                 CY_CAPSENSE_PIN_STATE_IDX_GND, &cy_capsense_context);
     }
-
 }
 
 
@@ -690,41 +705,196 @@ static void ezi2c_isr(void)
 {
     Cy_SCB_EZI2C_Interrupt(CYBSP_EZI2C_HW, &ezi2c_context);
 }
+#endif
+/* ENABLE_EZI2C */
 
 
 /*******************************************************************************
-* Function Name: tuner_communication_wrapper
+* Function Name: initialize_capsense_hardware_filter
 ********************************************************************************
 * Summary:
-* Wrapper function on Cy_CapSense_RunTuner for establishing communication
-* through CAPSENSE Tuner and to handle parameters update through CAPSENSE Tuner.
+* This function sets the hardware filter configuration to CIC1 in Wake-On-Touch
+* state, sets maximum raw-count and calibrate the low-power slots.
+*  For other widgets, this sets the hardware configuration to CIC2
 *
+** Parameters:
+*  CAPSENSE_STATE
+*
+* Return:
+*  void
 *******************************************************************************/
-static void tuner_communication_wrapper(CAPSENSE_STATE capsense_state)
+void initialize_capsense_hardware_filter(CAPSENSE_STATE capsense_state)
 {
-    if (CY_CAPSENSE_STATUS_RESTART_DONE == Cy_CapSense_RunTuner(&cy_capsense_context))
+    /* Configure the CIC1 filter for Wake-On-Touch state*/
+    hardware_filter_state_trasition(WAKE_ON_TOUCH_STATE);
+
+    /* Sets maximum raw counts */
+    CY_CAPSENSE_WAKE_ON_TOUCH_MAX_RAW_COUNT_VALUE =
+            (CY_CAPSENSE_WAKE_ON_TOUCH_SNS_CLK_VALUE * CY_CAPSENSE_WAKE_ON_TOUCH_NUM_SUBCONVERSIONS_VALUE);
+
+    /* Calibrate all the low power widgets */
+    Cy_CapSense_CalibrateAllLpSlots(&cy_capsense_context);
+
+    /* Sets CIC2 mode for active widgets only */
+    if (WAKE_ON_TOUCH_STATE != capsense_state)
     {
-        /* Sets CIC1 mode */
-        cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL &=
-                (uint32_t)(~((uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos)));
-
-        /* Sets maximum raw counts */
-        CY_CAPSENSE_WAKE_ON_TOUCH_MAX_RAW_COUNT_VALUE =
-                (CY_CAPSENSE_WAKE_ON_TOUCH_SNS_CLK_VALUE * CY_CAPSENSE_WAKE_ON_TOUCH_NUM_SUBCONVERSIONS_VALUE);
-
-        /* Repeats CapDAC auto-calibration */
-        Cy_CapSense_CalibrateAllLpSlots(&cy_capsense_context);
-
-        /* Sets CIC2 mode for active widgets only */
-        if (WAKE_ON_TOUCH_STATE != capsense_state)
-        {
-            cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase->FILTER_CTL |=
-                    (uint32_t)(1uL << MSCLP_FILTER_CTL_FILTER_MODE_Pos);
-        }
+        hardware_filter_state_trasition(ACTIVE_STATE);
     }
 }
-#endif
-/* ENABLE_EZI2C */
+
+
+/*******************************************************************************
+* Function Name: hardware_filter_state_trasition
+*******************************************************************************
+* Summary:
+* This function changes the filter (from CIC2 to CIC1) when CAPSENSE state changes
+* from any other state to wake-on-touch state,
+* If the state changes from wake-on-touch state to any other state,
+* hardware filter changes from CIC1 to CIC2.
+*
+* Parameters:
+* CAPSENSE_STATE
+*
+* Return:
+*  void
+*******************************************************************************/
+void hardware_filter_state_trasition(CAPSENSE_STATE capsense_state)
+{
+    MSCLP_Type * msclpBase;
+
+    msclpBase = cy_capsense_context.ptrCommonConfig->ptrChConfig->ptrHwBase;
+
+    if(WAKE_ON_TOUCH_STATE == capsense_state)
+    {
+        msclpBase->FILTER_CTL &= ~MSCLP_FILTER_CTL_FILTER_MODE_Msk;
+    }
+
+    else
+    {
+        msclpBase->FILTER_CTL |= MSCLP_FILTER_CTL_FILTER_MODE_Msk;
+    }
+}
+
+
+/*******************************************************************************
+* Function Name: capsense_liquid_active_state_check
+********************************************************************************
+* Summary:
+*  This function implements different scenarios of liquid presence on sensors
+*
+*  (1) CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID : Scanning of this sensor happens in
+*  self-cap mode when all the neighboring electrodes are driven as shield. This
+*  widget turns on when the kit is dipped inside a container of grounded liquid.
+*
+*  (2) CY_GUARD_MUTUAL_CAP_SENSOR_WDGT_ID : Scanning of this sensor happens in
+*  mutual-cap mode when all the touchpad electrodes are ganged to make an Rx electrode
+*  of the mutual-cap widget. The loop sensor is configured as Tx electrode.
+*  When a floating liquid appears between the Tx and Rx electrodes, raw-count drops
+*  from the baseline. The high 'low-baseline-reset' parameter of the sensor doesn't
+*  allow the baseline to follow the raw-count. When the difference difference of
+*  raw-count and the baseline drops below a negative threshold, indicates liquid presence.
+*
+*  (3) CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL0_WDGT_ID and
+*  CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL4_WDGT_ID :
+*  If both these two mutual cap sensors are active, will indicate the flow of thin liquid
+*  stream through the left edge of the touchpad sensor.
+*  Both these sensors are active when the flowing liquid is grounded.
+*
+*  (4 CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL2_WDGT_ID and
+*  CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL2_WDGT_ID :
+*  If both these two mutual cap sensors are active, will indicate the flow of thin liquid
+*  stream through the middle of the touchpad sensor.
+*  Both these sensors are active when the flowing liquid is grounded.
+*
+*  (5) CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL4_WDGT_ID and
+*  CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL4_WDGT_ID :
+*  If both these two mutual cap sensors are active, will indicate the flow of thin liquid
+*  stream through the right edge of the touchpad sensor.
+*  Both these sensors are active when the flowing liquid is grounded.
+*
+*  Parameters:
+*   None
+*
+*  Return:
+*   Status of one of the guard sensors whether active. Returns one of the states below:
+*
+*   '0' : LIQUID_STATE_INACTIVE : Not liquid detected on any of the sensor
+*
+*   '1' : GUARD_SENSOR_SELF_CAP_ACTIVE : The loop-sensor (self-cap) is active because of
+*                                    large volume of grounded liquid
+*
+*   '2' : GUARD_SENSOR_MUTUAL_CAP_GANGED_ACTIVE : Floating liquid appearing between the
+*                                            touchpad and proximity loop/hatch-area
+*
+*   '3' : GUARD_SENSOR_MUTUAL_CAP_LEFT_ACTIVE :  Thin stream of liquid flow
+*                                            through the left edge of the touchpad
+*
+*   '4' : GUARD_SENSOR_MUTUAL_CAP_MID_ACTIVE :  Thin stream of liquid flow
+*                                            through the middle of the touchpad
+*
+*   '5' : GUARD_SENSOR_MUTUAL_CAP_RIGHT_ACTIVE :  Thin stream of liquid flow
+*                                            through the right edge of the touchpad
+*
+*******************************************************************************/
+uint32_t capsense_liquid_active_state_check()
+{
+    uint32_t effective_liquid_active_status = LIQUID_STATE_INACTIVE;
+    int32_t raw_data_guard_mutual_cap_sensor = 0;
+    int32_t bsln_guard_mutual_cap_sensor = 0;
+    int32_t negative_diff_count_guard_mutual_cap_sensor = 0;
+    int32_t guard_mutual_cap_liquid_threshold = 100;
+
+    /* Compute the drop of raw-count from the baseline (raw-count change in the negative direction)
+     * when water flow happens on the sensors. */
+    raw_data_guard_mutual_cap_sensor = (int32_t)(cy_capsense_tuner.sensorContext[SENSOR_CONTEXT_GUARD_MUTUAL_CAP_SENSOR].raw);
+    bsln_guard_mutual_cap_sensor = (int32_t)(cy_capsense_tuner.sensorContext[SENSOR_CONTEXT_GUARD_MUTUAL_CAP_SENSOR].bsln);
+    negative_diff_count_guard_mutual_cap_sensor = (bsln_guard_mutual_cap_sensor - raw_data_guard_mutual_cap_sensor);
+
+    /* condition - 1:
+     * check the status of the Self-cap guard sensor (loop sensor). This signal is high when there is large volume of
+     * grounded liquid present on this sensor.
+     * */
+    if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID, &cy_capsense_context))
+        effective_liquid_active_status = GUARD_SENSOR_SELF_CAP_ACTIVE;
+
+    /* condition - 2:
+     * check the signal level of the Mutual cap guard sensor. For ungrounded liquid flow over the sensor,
+     * signal count is negative. The 'low baseline reset' parameter of the sensor is set very high. Hence the
+     * baseline doesn't drop when the raw-count shifts towards the negative direction.
+     * */
+    else if (negative_diff_count_guard_mutual_cap_sensor >= guard_mutual_cap_liquid_threshold)
+        effective_liquid_active_status = GUARD_SENSOR_MUTUAL_CAP_GANGED_ACTIVE;
+
+    /* condition-3:
+     * check the signal levels of mutual-cap button COL4-ROW0 and COL4-ROW3.
+     * If diff-count of both the sensors are higher than a threshold, then it is a liquid flow
+     */
+    else if ((SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL4_WDGT_ID, &cy_capsense_context)) &&
+        (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL4_WDGT_ID, &cy_capsense_context)))
+        effective_liquid_active_status = GUARD_SENSOR_MUTUAL_CAP_LEFT_ACTIVE;
+
+    /* condition-4:
+     * check the signal levels of mutual-cap button COL2-ROW0 and COL2-ROW3.
+     * If diff-count of both the sensors are higher than a threshold, then it is a liquid flow
+     */
+    else if ((SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL2_WDGT_ID, &cy_capsense_context)) &&
+        (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL2_WDGT_ID, &cy_capsense_context)))
+        effective_liquid_active_status = GUARD_SENSOR_MUTUAL_CAP_MID_ACTIVE;
+
+    /* condition-5:
+     * check the signal levels of mutual-cap button COL0-ROW0 and COL0-ROW3.
+     * If diff-count of both the sensors are higher than a threshold, then it is a liquid flow
+     */
+    else if ((SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW0_COL0_WDGT_ID, &cy_capsense_context)) &&
+        (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_MUTUAL_CAP_ROW3_COL0_WDGT_ID, &cy_capsense_context)))
+        effective_liquid_active_status = GUARD_SENSOR_MUTUAL_CAP_RIGHT_ACTIVE;
+
+    /* default not GUARD sensor is active */
+    else
+        effective_liquid_active_status = LIQUID_STATE_INACTIVE;
+
+    return effective_liquid_active_status;
+}
 
 
 #if ENABLE_SERIAL_LED
@@ -735,77 +905,129 @@ static void tuner_communication_wrapper(CAPSENSE_STATE capsense_state)
 * Logic to control the on / off status, color and brightness of the LEDs
 * based on the touch status of the CAPSENSE widgets.
 *
+* Parameters:
+* structure of different CAPSENSE application states
 *
+* Return:
+*  void
 *******************************************************************************/
-void led_control()
+void led_control(CAPSENSE_STATE capsense_state)
 {
     /* Brightness of each LED is represented by 0 to 255,
     * where 0 indicates LED in OFF state and 255 indicate maximum
     * brightness of an LED
     */
-    volatile uint8_t brightness_max = 255u;
-    volatile uint8_t brightness_min = 0u;
-
+    uint8_t brightness_max = 255u;
+    uint8_t brightness_min = 0u;
     uint8_t touchposition_x, touchposition_y ;
+
     cy_stc_capsense_touch_t *panelTouch =
             Cy_CapSense_GetTouchInfo(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context);
 
     touchposition_x = panelTouch->ptrPosition->x;
     touchposition_y = brightness_max - panelTouch->ptrPosition->y;
 
-/*LED1 and LED3 indicate the status of the 'CAPSENSE button' and 'Touchpad' */
+    /*LED1 and LED3 indicate the status of the 'CAPSENSE button' and 'Touchpad' */
 
-/*******************************************************************************
-* If CAPSENSE button is active, Turn On LED1 with color Orange (Fixed intensity)
-*******************************************************************************/
-    if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON_WDGT_ID, &cy_capsense_context))
+    switch(capsense_state)
     {
-        led_context.led_num[LED1].color_red = brightness_min;
-        led_context.led_num[LED1].color_green = brightness_min;
-        led_context.led_num[LED1].color_blue = brightness_max;
+        case ACTIVE_STATE :
+        {
+            /*******************************************************************************
+            * If CAPSENSE button is active, Turn On LED1 with color Orange (Fixed intensity)
+            *******************************************************************************/
+            if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON_WDGT_ID, &cy_capsense_context))
+            {
+                led_context.led_num[LED1].color_red = brightness_min;
+                led_context.led_num[LED1].color_green = brightness_min;
+                led_context.led_num[LED1].color_blue = brightness_max;
 
-        led_context.led_num[LED3].color_red = brightness_min;
-        led_context.led_num[LED3].color_green = brightness_min;
-        led_context.led_num[LED3].color_blue = brightness_min;
-    }
+                led_context.led_num[LED3].color_red = brightness_min;
+                led_context.led_num[LED3].color_green = brightness_min;
+                led_context.led_num[LED3].color_blue = brightness_min;
+            }
 
-/*******************************************************************************
-* If the Touchpad is active, Turn On LED1 and LED3
-* with Green color, and vary the intensity of the LEDs as per the finger
-* position reported
-*******************************************************************************/
-    else if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context))
-    {
-        led_context.led_num[LED1].color_red = brightness_min;
-        led_context.led_num[LED1].color_green = touchposition_x;
-        led_context.led_num[LED1].color_blue = brightness_min;
+            /*******************************************************************************
+            * If the Touchpad is active, Turn On LED1 and LED3
+            * with Green color, and vary the intensity of the LEDs as per the finger
+            * position reported
+            *******************************************************************************/
+            else if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context))
+            {
+                led_context.led_num[LED1].color_red = brightness_min;
+                led_context.led_num[LED1].color_green = touchposition_x;
+                led_context.led_num[LED1].color_blue = brightness_min;
 
-        led_context.led_num[LED3].color_red = brightness_min;
-        led_context.led_num[LED3].color_green = touchposition_y;
-        led_context.led_num[LED3].color_blue = brightness_min;
-    }
+                led_context.led_num[LED3].color_red = brightness_min;
+                led_context.led_num[LED3].color_green = touchposition_y;
+                led_context.led_num[LED3].color_blue = brightness_min;
+            }
 
-/*******************************************************************************
-* Default, all the LEDs are turned off
-********************************************************************************/
-    else
-    {
-        led_context.led_num[LED1].color_red = brightness_min;
-        led_context.led_num[LED1].color_green = brightness_min;
-        led_context.led_num[LED1].color_blue = brightness_min;
+            /*******************************************************************************
+            * Default, all the LEDs are turned off
+            ********************************************************************************/
+            else
+            {
+                led_context.led_num[LED1].color_red = brightness_min;
+                led_context.led_num[LED1].color_green = brightness_min;
+                led_context.led_num[LED1].color_blue = brightness_min;
 
-        led_context.led_num[LED3].color_red = brightness_min;
-        led_context.led_num[LED3].color_green = brightness_min;
-        led_context.led_num[LED3].color_blue = brightness_min;
-    }
+                led_context.led_num[LED3].color_red = brightness_min;
+                led_context.led_num[LED3].color_green = brightness_min;
+                led_context.led_num[LED3].color_blue = brightness_min;
+            }
 
-    led_context.led_num[LED2].color_red = brightness_min;
-    led_context.led_num[LED2].color_green = brightness_min;
-    led_context.led_num[LED2].color_blue = brightness_min;
+            led_context.led_num[LED2].color_red = brightness_min;
+            led_context.led_num[LED2].color_green = brightness_min;
+            led_context.led_num[LED2].color_blue = brightness_min;
 
+            break;
+
+         } /* end of LED logic of 'case ACTIVE_STATE' */
+
+        case LIQUID_ACTIVE_STATE :
+        {
+            /*******************************************************************************
+            * All LEDs are OFF
+            *******************************************************************************/
+            led_context.led_num[LED2].color_red = brightness_min;
+            led_context.led_num[LED2].color_green = brightness_min;
+            led_context.led_num[LED2].color_blue = brightness_min;
+
+            led_context.led_num[LED1].color_red = brightness_min;
+            led_context.led_num[LED1].color_green = brightness_min;
+            led_context.led_num[LED1].color_blue = brightness_min;
+
+            led_context.led_num[LED3].color_red = brightness_min;
+            led_context.led_num[LED3].color_green = brightness_min;
+            led_context.led_num[LED3].color_blue = brightness_min;
+
+            break;
+        } /* end of LED logic of 'case LIQUID ACTIVE_STATE' */
+
+        default:
+        {
+            led_context.led_num[LED2].color_red = brightness_min;
+            led_context.led_num[LED2].color_green = brightness_min;
+            led_context.led_num[LED2].color_blue = brightness_min;
+
+            led_context.led_num[LED1].color_red = brightness_min;
+            led_context.led_num[LED1].color_green = brightness_min;
+            led_context.led_num[LED1].color_blue = brightness_min;
+
+            led_context.led_num[LED3].color_red = brightness_min;
+            led_context.led_num[LED3].color_green = brightness_min;
+            led_context.led_num[LED3].color_blue = brightness_min;
+
+            break;
+
+        } /* end of 'case default' */
+
+    } /* end of switch */
 
     serial_led_control(&led_context);
 }
+
 #endif
 /* ENABLE_SERIAL_LED */
 
