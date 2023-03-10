@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Design version="12" xmlns="http://cypress.com/xsd/cydesignfile_v3">
-    <ToolInfo version="3.0.0"/>
+<Configuration app="BACKEND" formatVersion="13" lastSavedWith="Configurator Backend" lastSavedWithVersion="3.0.0" toolsPackage="ModusToolbox™ PSoC™ 4000T Early Access Pack 1.0.0" xmlns="http://cypress.com/xsd/cydesignfile_v4">
     <Devices>
         <Device mpn="CY8C4046LQI-T452">
             <BlockConfig>
@@ -67,7 +66,7 @@
                 <Block location="ioss[0].port[1].pin[0]">
                     <Alias value="CYBSP_ISX_TX"/>
                     <Personality template="m0s8pin" version="2.0">
-                        <Param id="DriveModes" value="CY_GPIO_DM_STRONG_IN_OFF"/>
+                        <Param id="DriveModes" value="CY_GPIO_DM_ANALOG"/>
                         <Param id="initialState" value="1"/>
                         <Param id="vtrip" value="CY_GPIO_VTRIP_CMOS"/>
                         <Param id="isrTrigger" value="CY_GPIO_INTR_DISABLE"/>
@@ -240,23 +239,25 @@
                 </Block>
                 <Block location="msclp[0].msclp[0]">
                     <Alias value="CYBSP_MSC"/>
-                    <Personality template="m0s8mscv3lp" version="1.0">
+                    <Personality template="m0s8mscv3lp" version="3.0">
                         <Param id="mscInstanceName" value="MSCLP0"/>
-                        <Param id="SensorCount" value="13"/>
+                        <Param id="extFrmStartEn" value="false"/>
+                        <Param id="SensorCount" value="14"/>
                         <Param id="CapacitorCount" value="2"/>
                         <Param id="SensorName0" value="Shield0"/>
                         <Param id="SensorName1" value="Shield1"/>
-                        <Param id="SensorName2" value="BUTTON_Sns0"/>
-                        <Param id="SensorName3" value="TOUCHPAD_Col0"/>
-                        <Param id="SensorName4" value="TOUCHPAD_Col1"/>
-                        <Param id="SensorName5" value="TOUCHPAD_Col2"/>
-                        <Param id="SensorName6" value="TOUCHPAD_Col3"/>
-                        <Param id="SensorName7" value="TOUCHPAD_Col4"/>
-                        <Param id="SensorName8" value="TOUCHPAD_Row0"/>
-                        <Param id="SensorName9" value="TOUCHPAD_Row1"/>
-                        <Param id="SensorName10" value="TOUCHPAD_Row2"/>
-                        <Param id="SensorName11" value="TOUCHPAD_Row3"/>
-                        <Param id="SensorName12" value="GUARD_LOOP_SENSOR_Sns0"/>
+                        <Param id="SensorName2" value="Shield2"/>
+                        <Param id="SensorName3" value="BUTTON_Sns0"/>
+                        <Param id="SensorName4" value="TOUCHPAD_Col0"/>
+                        <Param id="SensorName5" value="TOUCHPAD_Col1"/>
+                        <Param id="SensorName6" value="TOUCHPAD_Col2"/>
+                        <Param id="SensorName7" value="TOUCHPAD_Col3"/>
+                        <Param id="SensorName8" value="TOUCHPAD_Col4"/>
+                        <Param id="SensorName9" value="TOUCHPAD_Row0"/>
+                        <Param id="SensorName10" value="TOUCHPAD_Row1"/>
+                        <Param id="SensorName11" value="TOUCHPAD_Row2"/>
+                        <Param id="SensorName12" value="TOUCHPAD_Row3"/>
+                        <Param id="SensorName13" value="GUARD_SENSOR_Sns0"/>
                         <Param id="CapacitorName0" value="Cmod1"/>
                         <Param id="CapacitorName1" value="Cmod2"/>
                     </Personality>
@@ -345,7 +346,7 @@
                         <Param id="SlaveAddress1" value="8"/>
                         <Param id="SlaveAddress2" value="9"/>
                         <Param id="SubAddrSize" value="CY_SCB_EZI2C_SUB_ADDR16_BITS"/>
-                        <Param id="EnableWakeup" value="false"/>
+                        <Param id="EnableWakeup" value="true"/>
                         <Param id="inFlash" value="true"/>
                     </Personality>
                 </Block>
@@ -406,18 +407,23 @@
                     <Port name="peri[0].div_16[1].clk[0]"/>
                     <Port name="scb[0].clock[0]"/>
                 </Net>
-                <Mux name="sense" location="msclp[0].msclp[0]">
+                <Mux name="cmod" location="msclp[0].msclp[0]">
                     <Arm>
                         <Port name="ioss[0].port[4].pin[2].analog[0]"/>
                     </Arm>
                     <Arm>
                         <Port name="ioss[0].port[4].pin[3].analog[0]"/>
                     </Arm>
+                </Mux>
+                <Mux name="sense" location="msclp[0].msclp[0]">
+                    <Arm>
+                        <Port name="ioss[0].port[3].pin[0].analog[0]"/>
+                    </Arm>
                     <Arm>
                         <Port name="ioss[0].port[1].pin[0].analog[0]"/>
                     </Arm>
                     <Arm>
-                        <Port name="ioss[0].port[3].pin[0].analog[0]"/>
+                        <Port name="ioss[0].port[2].pin[0].analog[0]"/>
                     </Arm>
                     <Arm>
                         <Port name="ioss[0].port[4].pin[1].analog[0]"/>
@@ -438,16 +444,16 @@
                         <Port name="ioss[0].port[0].pin[0].analog[0]"/>
                     </Arm>
                     <Arm>
-                        <Port name="ioss[0].port[2].pin[4].analog[0]"/>
-                    </Arm>
-                    <Arm>
-                        <Port name="ioss[0].port[2].pin[3].analog[0]"/>
+                        <Port name="ioss[0].port[2].pin[1].analog[0]"/>
                     </Arm>
                     <Arm>
                         <Port name="ioss[0].port[2].pin[2].analog[0]"/>
                     </Arm>
                     <Arm>
-                        <Port name="ioss[0].port[2].pin[1].analog[0]"/>
+                        <Port name="ioss[0].port[2].pin[3].analog[0]"/>
+                    </Arm>
+                    <Arm>
+                        <Port name="ioss[0].port[2].pin[4].analog[0]"/>
                     </Arm>
                     <Arm>
                         <Port name="ioss[0].port[2].pin[5].analog[0]"/>
@@ -457,4 +463,4 @@
         </Device>
     </Devices>
     <ConfiguratorData/>
-</Design>
+</Configuration>
