@@ -1,14 +1,14 @@
 /******************************************************************************
 * File Name:   main.c
 *
-* Description: This is the source code for the MSCLP Robust Low-Power
+* Description: This is the source code for the PSoC 4: MSCLP Robust Low-Power
 *              Liquid-Tolerant CAPSENSE&trade; code example for ModusToolbox
 *
 * Related Document: See README.md
 *
 *
 *******************************************************************************
-* Copyright 2022-2023, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2021-2023, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -53,55 +53,41 @@
 /*******************************************************************************
 * User Configurable Macros
 *******************************************************************************/
-/* Enable this, if Debugging needs to be enabled -
- *    See Readme for more details.
- *    SWD and Tuner cannot be enabled together as the pins are MUXed in CY8CKIT-040T */
-#define SWD_DEBUG_ENABLE                        (0u)
-
 /* Enable the serial LED feature for touch indication */
 #define ENABLE_SERIAL_LED                       (1u)
 
 /* Enable this, if Tuner needs to be enabled */
 #define ENABLE_TUNER                            (1u)
 
-/* Define the Refresh rate (in Hz) in two different application states (of CAPSENSE&trade;)*/
+/* Define the Refresh rate (in Hz) in three different application states (of CAPSENSE&trade;)*/
 #define ACTIVE_MODE_REFRESH_RATE                (128u)
 #define ACTIVE_LOW_REFRESH_RATE                 (32u)
+#define LIQUID_ACTIVE_REFRESH_RATE              (16u)
 
 /* Define timeout (in seconds) for two different states */
 #define ACTIVE_MODE_TIMEOUT_IN_SEC              (5u)
 #define ACTIVE_LOW_REFRESH_TIMEOUT_IN_SEC       (5u)
 
-/* Active mode Scan time in us ~= 140us */
-#define ACTIVE_MODE_FRAME_SCAN_TIME             (140u)
-/* Active mode Processing time in us ~= 127us with Serial LED and Tuner disabled
- * and 288us with Serial LED and Tuner enabled */
-#define ACTIVE_MODE_PROCESS_TIME                (127u)
+/* Active mode Scan time in us ~= 174us */
+#define ACTIVE_MODE_FRAME_SCAN_TIME             (174u)
+/* Active mode Processing time in us ~= 143us with Serial LED and Tuner disabled*/
+#define ACTIVE_MODE_PROCESS_TIME                (142u)
 
-/* ALR mode Scan time in us ~= 140us */
-#define ALR_MODE_FRAME_SCAN_TIME                (140u)
-/* ALR mode Processing time in us ~= 127us with Serial LED and Tuner disabled
- * and 288us with Serial LED and Tuner enabled */
-#define ALR_MODE_PROCESS_TIME                   (127u)
+/* ALR mode Scan time in us ~= 174us */
+#define ALR_MODE_FRAME_SCAN_TIME                (174u)
+/* ALR mode Processing time in us ~= 142us with Serial LED and Tuner disabled*/
+#define ALR_MODE_PROCESS_TIME                   (142u)
+
+/* Liquid Active mode Scan time in us ~= 136us */
+#define LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME      (136u)
+/* Liquid Active mode Processing time in us ~= 130us with Serial LED and Tuner disabled*/
+#define LIQUID_ACTIVE_MODE_PROCESS_TIME         (130u)
 
 /*******************************************************************************
 * Fixed Macros
 *******************************************************************************/
 #define CAPSENSE_MSC0_INTR_PRIORITY             (3u)
 #define CY_ASSERT_FAILED                        (0u)
-#define MSCLP_CAPSENSE_WIDGET_INACTIVE          (0u)
-
-/* Setting self-cap sensors raw-count calibration percentage to 70% */
-#define CUSTOM_CSD_CALIBRATION_LEVEL            (70u)
-
-/* setting recommended CDAC Dither scale value. Default is '0u' */
-#define	CDAC_DITHER_SCALE                       (1u)
-
-/* setting recommended CDAC Dither seed value. Default is '255u' */
-#define	CDAC_DITHER_SEED                        (15u)
-
-/* setting recommended CDAC Dither poly value. Default is '142u' */
-#define	CDAC_DITHER_POLY                        (9u)
 
 /* EZI2C interrupt priority must be higher than CAPSENSE&trade; interrupt. */
 #define EZI2C_INTR_PRIORITY                     (2u)
@@ -109,26 +95,30 @@
 /* Define the Reset state of Timeout counter */
 #define TIMER_RESET                             (0u)
 
-/* Disable EZI2C when SWD Debug is enabled in the User defined Macro*/
-#define ENABLE_EZI2C                            (!SWD_DEBUG_ENABLE)
-
 #define ILO_FREQ                                (40000u)
 #define TIME_IN_US                              (1000000u)
 
-#define MINIMUM_TIMER                    (TIME_IN_US / ILO_FREQ)
+#define MINIMUM_TIMER                           (TIME_IN_US / ILO_FREQ)
 
 #if ((TIME_IN_US / ACTIVE_MODE_REFRESH_RATE) > (ACTIVE_MODE_FRAME_SCAN_TIME + ACTIVE_MODE_PROCESS_TIME))
-    #define ACTIVE_MODE_TIMER            (TIME_IN_US / ACTIVE_MODE_REFRESH_RATE - \
-                                            (ACTIVE_MODE_FRAME_SCAN_TIME + ACTIVE_MODE_PROCESS_TIME))
+    #define ACTIVE_MODE_TIMER                   (TIME_IN_US / ACTIVE_MODE_REFRESH_RATE - \
+                                                (ACTIVE_MODE_FRAME_SCAN_TIME + ACTIVE_MODE_PROCESS_TIME))
 #else
     #define ACTIVE_MODE_TIMER                   (MINIMUM_TIMER)
 #endif
 
 #if ((TIME_IN_US / ACTIVE_LOW_REFRESH_RATE) > (ALR_MODE_FRAME_SCAN_TIME + ALR_MODE_PROCESS_TIME))
-    #define ACTIVE_LOW_REFRESH_TIMER               (TIME_IN_US / ACTIVE_LOW_REFRESH_RATE - \
-                                            (ALR_MODE_FRAME_SCAN_TIME + ALR_MODE_PROCESS_TIME))
+    #define ACTIVE_LOW_REFRESH_TIMER            (TIME_IN_US / ACTIVE_LOW_REFRESH_RATE - \
+                                                (ALR_MODE_FRAME_SCAN_TIME + ALR_MODE_PROCESS_TIME))
 #else
     #define ACTIVE_LOW_REFRESH_TIMER            (MINIMUM_TIMER)
+#endif
+
+#if ((TIME_IN_US / LIQUID_ACTIVE_REFRESH_RATE) > (LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME + LIQUID_ACTIVE_MODE_PROCESS_TIME))
+    #define LIQUID_ACTIVE_REFRESH_TIMER         (TIME_IN_US / LIQUID_ACTIVE_REFRESH_RATE - \
+                                                (LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME + LIQUID_ACTIVE_MODE_PROCESS_TIME))
+#else
+    #define LIQUID_ACTIVE_REFRESH_TIMER         (MINIMUM_TIMER)
 #endif
 
 /* Define Time out of different applications states depending upon
@@ -136,11 +126,16 @@
 #define ACTIVE_MODE_TIMEOUT              (ACTIVE_MODE_REFRESH_RATE * ACTIVE_MODE_TIMEOUT_IN_SEC)
 #define ACTIVE_LOW_REFRESH_TIMEOUT       (ACTIVE_LOW_REFRESH_RATE * ACTIVE_LOW_REFRESH_TIMEOUT_IN_SEC)
 
-#define LIQUID_ACTIVE_MODE_TIMEOUT              (0u)
-
-/* Define the conditions to check sensor status and liquid presence state */
+/* Define the macros to check sensor status and liquid presence state
+ * indicating touch / no-touch status of all sensors */
 #define SENSOR_ACTIVE                           (1u)
+
+/* Define the macros specific for conditions to check liquid active state */
 #define LIQUID_STATE_ACTIVE                     (1u)
+#define LIQUID_STATE_INACTIVE                   (0u)
+#define FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE  (CY_CAPSENSE_TOUCHPAD_FIRST_SLOT_ID)
+#define LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE   (CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_FIRST_SLOT_ID)
+#define NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE      ((LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE - FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE) + 1u)
 
 /*****************************************************************************
 * Finite state machine for different CAPSENSE&trade; operating states
@@ -160,29 +155,16 @@ typedef enum
 } CAPSENSE_STATE;
 
 /*******************************************************************************
-* Global Definitions
-*******************************************************************************/
-#if ENABLE_EZI2C
-cy_stc_scb_ezi2c_context_t ezi2c_context;
-#endif
-
-#if ENABLE_SERIAL_LED
-stc_serial_led_context_t led_context;
-#endif
-
-/*******************************************************************************
 * Function Prototypes
 *******************************************************************************/
 static void initialize_capsense(void);
-static void set_dither_parameters(void);
 static void capsense_msc0_isr(void);
 
 void inactive_sensors_reconfiguration(void * context);
+uint8_t capsense_liquid_active_state_check();
 
-#if ENABLE_EZI2C
 static void initialize_capsense_tuner(void);
 static void ezi2c_isr(void);
-#endif
 
 #if ENABLE_SERIAL_LED
 void led_control();
@@ -196,9 +178,9 @@ cy_en_syspm_status_t deep_sleep_callback(cy_stc_syspm_callback_params_t *callbac
 /*******************************************************************************
 * Global Definitions
 *******************************************************************************/
-#if ENABLE_EZI2C
+uint32_t capsense_liquid_active_state_status;
+
 cy_stc_scb_ezi2c_context_t ezi2c_context;
-#endif
 
 #if ENABLE_SERIAL_LED
 extern cy_stc_scb_spi_context_t CYBSP_MASTER_SPI_context;
@@ -207,14 +189,12 @@ stc_serial_led_context_t led_context;
 
 /* Call back parameters for custom, EzI2C, SPI */
 
-#if ENABLE_EZI2C
 /* Callback params for EzI2C */
 cy_stc_syspm_callback_params_t ezi2cCallbackParams =
 {
     .base       = SCB1,
     .context    = &ezi2c_context
 };
-#endif
 
 #if ENABLE_SERIAL_LED
 /* Callback params for SPI */
@@ -231,7 +211,6 @@ cy_stc_syspm_callback_params_t deepSleepCallBackParams = {
     .context    =  NULL
 };
 
-#if ENABLE_EZI2C
 /* Callback declaration for EzI2C Deep Sleep callback */
 cy_stc_syspm_callback_t ezi2cCallback =
 {
@@ -243,7 +222,6 @@ cy_stc_syspm_callback_t ezi2cCallback =
     .nextItm        = NULL,
     .order          = 0
 };
-#endif
 
 #if ENABLE_SERIAL_LED
 /* Callback declaration for SPI Deep Sleep callback */
@@ -324,10 +302,8 @@ int main(void)
     Cy_GPIO_SetDrivemode(CYBSP_SERIAL_LED_PORT, CYBSP_SERIAL_LED_NUM, CY_GPIO_DM_ANALOG);
     #endif
 
-    #if ENABLE_EZI2C
     /* Initialize EZI2C */
     initialize_capsense_tuner();
-    #endif
 
     /* Register callbacks */
     register_callback();
@@ -343,12 +319,10 @@ int main(void)
     Cy_CapSense_IloCompensate(&cy_capsense_context);
 
     Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
-
-    /* Calibrate all the low power widgets */
-    Cy_CapSense_CalibrateAllLpSlots(&cy_capsense_context);
+    capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
 
 /*******************************************************************************
-* Start the state-machine to capture the three different states of operation.
+* Start the state-machine to capture the different states of operation.
 * This is a state-machine implemented to capture 4 different states
 * of CAPSENSE&trade; block for this specific application.
 *******************************************************************************/
@@ -371,7 +345,6 @@ int main(void)
 
                     /* This is a place where all interrupt handlers will be executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
-
                 }
 
                 Cy_SysLib_ExitCriticalSection(interruptStatus);
@@ -381,15 +354,17 @@ int main(void)
                 /* Scan, process and check the status of the all Active mode sensors */
                 if (Cy_CapSense_IsAnyWidgetActive(&cy_capsense_context))
                 {
-                    timeout_counter = TIMER_RESET;
+                    /* The function 'capsense_liquid_active_state_check' checks different sensor signals
+                    * to identify presence of liquid on the sensors. If this returns True, the application
+                    * changes from ACTIVE state to LIQUID ACTIVE state
+                    */
+                    capsense_liquid_active_state_status = capsense_liquid_active_state_check();
 
-                    /* if Guard sensor is active, change the state to LIQUID_ACTIVE_STATE*/
-                    if (LIQUID_STATE_ACTIVE ==
-                            Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID, &cy_capsense_context))
+                    if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
                     {
                         capsense_state = LIQUID_ACTIVE_STATE;
                         timeout_counter = TIMER_RESET;
-                        Cy_CapSense_InitializeAllStatuses(&cy_capsense_context);
+                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER, &cy_capsense_context);
                     }
                 }
 
@@ -406,11 +381,6 @@ int main(void)
                         Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER, &cy_capsense_context);
                     }
                 }
-
-                #if ENABLE_SERIAL_LED
-                /* Serial LED control for showing the CAPSENSE&trade; touch status (feedback) */
-                led_control();
-                #endif
 
                 break;
             }
@@ -431,7 +401,6 @@ int main(void)
 
                     /* This is a place where all interrupt handlers will be executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
-
                 }
 
                 Cy_SysLib_ExitCriticalSection(interruptStatus);
@@ -441,9 +410,25 @@ int main(void)
                 /* Scan, process and check the status of the all Active mode sensors */
                 if (Cy_CapSense_IsAnyWidgetActive(&cy_capsense_context))
                 {
-                    capsense_state = ACTIVE_STATE;
-                    timeout_counter = TIMER_RESET;
-                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+                    /* The function 'capsense_liquid_active_state_check' checks different sensor signals
+                    * to identify presence of liquid on the sensors. If this returns True, the application
+                    * changes from ACTIVE state to LIQUID ACTIVE state
+                    */
+                    capsense_liquid_active_state_status = capsense_liquid_active_state_check();
+
+                    if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
+                    {
+                        capsense_state = LIQUID_ACTIVE_STATE;
+                        timeout_counter = TIMER_RESET;
+                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER, &cy_capsense_context);
+                    }
+
+                    else
+                    {
+                        capsense_state = ACTIVE_STATE;
+                        timeout_counter = TIMER_RESET;
+                        Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+                    }
                 }
 
                 else
@@ -451,7 +436,7 @@ int main(void)
                     timeout_counter++;
 
                     /* if there is no touch and the timeout happens, change the
-                    * state to ACTIVE_LOW_REFRESH_RATE.*/
+                    * state to WAKE_ON_TOUCH_STATE.*/
                     if (ACTIVE_LOW_REFRESH_TIMEOUT < timeout_counter)
                     {
                         capsense_state = WAKE_ON_TOUCH_STATE;
@@ -478,7 +463,6 @@ int main(void)
 
                     /* This is a place where all interrupt handlers will be executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
-
                 }
 
                 Cy_SysLib_ExitCriticalSection(interruptStatus);
@@ -513,33 +497,43 @@ int main(void)
             case LIQUID_ACTIVE_STATE :
             {
                 /* Scan only the slot(s) of the guard sensor(s) that can indicate presence of liquid */
-                Cy_CapSense_ScanSlots(CY_CAPSENSE_GUARD_SENSOR_FIRST_SLOT_ID, CY_CAPSENSE_GUARD_SENSOR_SLOT_SIZE, &cy_capsense_context);
+                Cy_CapSense_ScanSlots(FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE, NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE, &cy_capsense_context);
+
+                interruptStatus = Cy_SysLib_EnterCriticalSection();
 
                 while (Cy_CapSense_IsBusy(&cy_capsense_context))
                 {
                     Cy_SysPm_CpuEnterDeepSleep ();
+
+                    Cy_SysLib_ExitCriticalSection(interruptStatus);
+
+                    /* This is a place where all interrupt handlers will be executed */
+                    interruptStatus = Cy_SysLib_EnterCriticalSection();
                 }
 
-                /* Process only the guard sensor(s) widget to detect the presence of liquid */
-                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID, &cy_capsense_context);
+                Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                /* Scan, process and check the status of the all Active mode sensors */
-                if (LIQUID_STATE_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_GUARD_SENSOR_WDGT_ID,
-                        &cy_capsense_context))
+                /* Process only the touchpad and guard sensor(s) widget to detect the presence of liquid */
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID, &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_WDGT_ID, &cy_capsense_context);
+
+                /* Check the liquid active condition is still valid or not. */
+                capsense_liquid_active_state_status = capsense_liquid_active_state_check();
+
+                if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
                 {
-                    capsense_state = LIQUID_ACTIVE_STATE;
+                    timeout_counter = TIMER_RESET;
                 }
 
                 else
                 {
                     capsense_state = ACTIVE_STATE;
                     timeout_counter = TIMER_RESET;
+                    capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
+                    Cy_CapSense_InitializeAllStatuses(&cy_capsense_context);
+                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
                 }
-
-                #if ENABLE_SERIAL_LED
-                /* Serial LED control for showing the CAPSENSE&trade; touch status (feedback) */
-                led_control();
-                #endif
 
                 break;
             }
@@ -555,6 +549,11 @@ int main(void)
 
         }
         /* end of switch */
+
+        #if ENABLE_SERIAL_LED
+        /* Serial LED control for showing the CAPSENSE&trade; touch status (feedback) */
+        led_control();
+        #endif
 
         #if ENABLE_TUNER
         /* Establishes synchronized communication with the CAPSENSE&trade; Tuner tool */
@@ -599,14 +598,6 @@ static void initialize_capsense(void)
         NVIC_ClearPendingIRQ(capsense_msc0_interrupt_config.intrSrc);
         NVIC_EnableIRQ(capsense_msc0_interrupt_config.intrSrc);
 
-        /* Setting self-cap sensors raw-count calibration percentage to 70% */
-        Cy_CapSense_SetCalibrationTarget(CUSTOM_CSD_CALIBRATION_LEVEL, CY_CAPSENSE_CSD_GROUP, &cy_capsense_context);
-
-        /* Setting Dither parameter
-        * Must be called after Cy_CapSense_Init() and before Cy_CapSense_Enable()
-        */
-        set_dither_parameters();
-
         /* Initialize the CAPSENSE&trade; firmware modules. */
         status = Cy_CapSense_Enable(&cy_capsense_context);
     }
@@ -644,6 +635,13 @@ static void capsense_msc0_isr(void)
 *  sensor state to be defined in the Cy_CapSense_SlotPinState API and to be
 *  initialized in initialize_capsense.
 *
+*  Parameters:
+*  The pointer to the CAPSENSE&trade; context structure
+*  \ref cy_stc_capsense_context_t.
+*
+* Return:
+* void
+*
 *******************************************************************************/
 void inactive_sensors_reconfiguration(void * context)
 {
@@ -662,14 +660,12 @@ void inactive_sensors_reconfiguration(void * context)
     for (slotId = touchpad_scan_first_slot_Id; slotId <= touchpad_scan_last_slot_Id; slotId++)
     {
         Cy_CapSense_SlotPinState(slotId, &cy_capsense_context.ptrWdConfig
-                [CY_CAPSENSE_GUARD_SENSOR_WDGT_ID].ptrEltdConfig[0u],
+                [CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID].ptrEltdConfig[0u],
                 CY_CAPSENSE_PIN_STATE_IDX_GND, &cy_capsense_context);
     }
 
 }
 
-
-#if ENABLE_EZI2C
 /*******************************************************************************
 * Function Name: initialize_capsense_tuner
 ********************************************************************************
@@ -723,9 +719,6 @@ static void ezi2c_isr(void)
 {
     Cy_SCB_EZI2C_Interrupt(CYBSP_EZI2C_HW, &ezi2c_context);
 }
-#endif
-/* ENABLE_EZI2C */
-
 
 #if ENABLE_SERIAL_LED
 /*******************************************************************************
@@ -735,6 +728,11 @@ static void ezi2c_isr(void)
 * Logic to control the on / off status, color and brightness of the LEDs
 * based on the touch status of the CAPSENSE&trade; widgets.
 *
+* Parameters:
+* structure of different CAPSENSE application states
+*
+* Return:
+*  void
 *
 *******************************************************************************/
 void led_control()
@@ -747,15 +745,17 @@ void led_control()
     volatile uint8_t brightness_min = 0u;
 
     uint8_t touchposition_x, touchposition_y ;
+
     cy_stc_capsense_touch_t *panelTouch =
             Cy_CapSense_GetTouchInfo(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context);
 
     touchposition_x = panelTouch->ptrPosition->x;
     touchposition_y = panelTouch->ptrPosition->y;
+
 /*LED1 and LED3 indicate the status of the 'CAPSENSE&trade; button' and 'Touchpad' */
 
 /*******************************************************************************
-* If CAPSENSE&trade; button is active, Turn On LED1 with color Orange (Fixed intensity)
+* If CAPSENSE&trade; button is active, Turn On LED1 with color Blue (Fixed intensity)
 *******************************************************************************/
     if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON_WDGT_ID, &cy_capsense_context))
     {
@@ -773,7 +773,8 @@ void led_control()
 * with Green color, and vary the intensity of the LEDs as per the finger
 * position reported
 *******************************************************************************/
-    else if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context))
+    else if ((SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context)) &&
+            (capsense_liquid_active_state_status == LIQUID_STATE_INACTIVE))
     {
         led_context.led_num[LED1].color_red = brightness_min;
         led_context.led_num[LED1].color_green = touchposition_x;
@@ -802,12 +803,10 @@ void led_control()
     led_context.led_num[LED2].color_green = brightness_min;
     led_context.led_num[LED2].color_blue = brightness_min;
 
-
     serial_led_control(&led_context);
 }
 #endif
 /* ENABLE_SERIAL_LED */
-
 
 /*******************************************************************************
 * Function Name: register_callback
@@ -825,10 +824,8 @@ void led_control()
 *******************************************************************************/
 void register_callback(void)
 {
-    #if ENABLE_EZI2C
     /* Register EzI2C Deep Sleep callback */
     Cy_SysPm_RegisterCallback(&ezi2cCallback);
-    #endif
 
     #if ENABLE_SERIAL_LED
     /* Register SPI Deep Sleep callback */
@@ -838,7 +835,6 @@ void register_callback(void)
     /* Register Deep Sleep callback */
     Cy_SysPm_RegisterCallback(&deepSleepCb);
 }
-
 
 /*******************************************************************************
 * Function Name: deep_sleep_callback
@@ -899,40 +895,6 @@ cy_en_syspm_status_t deep_sleep_callback(
             break;
     }
     return ret_val;
-}
-
-/*******************************************************************************
-* Function Name: set_dither_parameters
-********************************************************************************
-* Summary:
-*  This functions sets the below CDAC Dither parameters to achive better performance
-*  1. CDAC_Dither_Scale
-*  		- Default value is '0'
-*  		- Recommended value defined in macro 'CDAC_DITHER_SCALE'
-*  2. CDAC_Dither_poly
-*  		- Default value is '142'
-*  		- Recommended value defined in macro 'CDAC_DITHER_POLY'
-*  3. CDAC_Dither_Seed
-*  		- Default value is '255'
-*  		- Recommended value defined in macro 'CDAC_DITHER_SEED'
-*
-*  Note : Must be called after Cy_CapSense_Init() and before Cy_CapSense_Enable
-*
-*  Refer CE Readme for more details
-*  Parameters:  void
-*  Return:  void
-*******************************************************************************/
-static void set_dither_parameters(void)
-{
-    /* Set dither scale as '1' for specific widgets*/
-    cy_capsense_context.ptrWdContext[CY_CAPSENSE_BUTTON_WDGT_ID].cdacDitherValue = CDAC_DITHER_SCALE;
-    cy_capsense_context.ptrWdContext[CY_CAPSENSE_GUARD_SENSOR_WDGT_ID].cdacDitherValue = CDAC_DITHER_SCALE;
-
-    /* Set dither polynomial for all widgets*/
-    cy_capsense_context.ptrInternalContext->cdacDitherPoly = CDAC_DITHER_POLY;
-
-    /* Set dither seed for all widgets*/
-    cy_capsense_context.ptrInternalContext->cdacDitherSeed = CDAC_DITHER_SEED;
 }
 
 /* [] END OF FILE */
