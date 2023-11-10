@@ -3,11 +3,6 @@
     <Devices>
         <Device mpn="CY8C4046LQI-T452">
             <BlockConfig>
-                <Block location="cpuss[0].dap[0]">
-                    <Personality template="m0s8dap" version="1.0">
-                        <Param id="dbgMode" value="SWD"/>
-                    </Personality>
-                </Block>
                 <Block location="ioss[0].port[0].pin[0]">
                     <Alias value="CYBSP_CSX_TP_RX4"/>
                     <Personality template="m0s8pin" version="2.0">
@@ -386,14 +381,6 @@
                 </Block>
             </BlockConfig>
             <Netlist>
-                <Net>
-                    <Port name="cpuss[0].dap[0].swd_clk[0]"/>
-                    <Port name="ioss[0].port[3].pin[3].digital_in[0]"/>
-                </Net>
-                <Net>
-                    <Port name="cpuss[0].dap[0].swd_data[0]"/>
-                    <Port name="ioss[0].port[3].pin[2].digital_inout[0]"/>
-                </Net>
                 <Net>
                     <Port name="ioss[0].port[2].pin[2].digital_inout[0]"/>
                     <Port name="scb[1].i2c_scl[0]"/>

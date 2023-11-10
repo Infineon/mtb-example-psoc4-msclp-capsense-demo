@@ -68,18 +68,18 @@
 #define ACTIVE_MODE_TIMEOUT_IN_SEC              (5u)
 #define ACTIVE_LOW_REFRESH_TIMEOUT_IN_SEC       (5u)
 
-/* Active mode Scan time in us ~= 174us */
-#define ACTIVE_MODE_FRAME_SCAN_TIME             (174u)
+/* Active mode Scan time calculated in us ~= 356us */
+#define ACTIVE_MODE_FRAME_SCAN_TIME             (356u)
 /* Active mode Processing time in us ~= 143us with Serial LED and Tuner disabled*/
 #define ACTIVE_MODE_PROCESS_TIME                (142u)
 
-/* ALR mode Scan time in us ~= 174us */
-#define ALR_MODE_FRAME_SCAN_TIME                (174u)
+/* ALR mode Scan time calculated in us ~= 356us */
+#define ALR_MODE_FRAME_SCAN_TIME                (356u)
 /* ALR mode Processing time in us ~= 142us with Serial LED and Tuner disabled*/
 #define ALR_MODE_PROCESS_TIME                   (142u)
 
-/* Liquid Active mode Scan time in us ~= 136us */
-#define LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME      (136u)
+/* Liquid Active mode Scan time calculated in us ~= 337us */
+#define LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME      (337u)
 /* Liquid Active mode Processing time in us ~= 130us with Serial LED and Tuner disabled*/
 #define LIQUID_ACTIVE_MODE_PROCESS_TIME         (130u)
 

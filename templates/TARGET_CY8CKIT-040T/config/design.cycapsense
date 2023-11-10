@@ -526,8 +526,8 @@
                 <Property id="LFSR_RANGE" value="AUTO"/>
                 <Property id="LFSR_DITHER_LIMIT" value="10"/>
                 <Property id="CLK_SOURCE_AUTO_SEL_MODE" value="STRONG"/>
-                <Property id="NUM_SUBCONVERSIONS" value="12"/>
-                <Property id="CIC_RATE" value="160"/>
+                <Property id="NUM_SUBCONVERSIONS" value="13"/>
+                <Property id="CIC_RATE" value="173"/>
                 <Property id="CIC_SHIFT" value="AUTO"/>
                 <Property id="ROW_CIC_SHIFT" value="AUTO"/>
                 <Property id="CDAC_REF0" value="8"/>

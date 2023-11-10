@@ -176,6 +176,12 @@ Becasue this project has the necessary settings by default you can go to the [Op
 
 3. After programming, the application starts automatically.
 
+   > **Note:** After programming, you see the following error message if debug mode is disabled. This can be ignored or enabling debug solves this error.
+
+   ``` c
+   "Error: Error connecting Dp: Cannot read IDR"
+   ```
+
 4. Touch any of the sensors with your finger. LEDs turn ON indicating the activation of different CAPSENSE&trade; sensors in the following pattern:
 
    - LED1 turns ON in blue when the button is touched.
@@ -271,6 +277,13 @@ Becasue this project has the necessary settings by default you can go to the [Op
 
 To observe the CAPSENSE&trade; data at a higher refresh rate and for specific sensors, see [Using Bridge Control Panel to view CAPSENSE&trade; data - KBA237056](www.infineon.com/002-37056).
 
+## Operation at other voltages
+
+[CY8CKIT-040T kit](https://www.infineon.com/CY8CKIT-040T) supports operating voltages of 1.8 V, 3.3 V, and 5 V. Use voltage selection switch available on top of the kit to set the preferred operating voltage and see the [setup the VDDA supply voltage and Debug mode](#set-up-the-vdda-supply-voltage-and-debug-mode-in-device-configurator) section .
+
+This application functionalities are optimally tuned for 1.8 V. However, you can observe the basic functionalities working across other voltages. 
+
+It is recommended to tune application for the preferred voltages for better performance.
 
 ### Measure current at different application states
 
@@ -282,39 +295,43 @@ To observe the CAPSENSE&trade; data at a higher refresh rate and for specific se
       #define ENABLE_TUNER                     (0u)
     ```
     
+2. Disable the self test library from the CAPSENSE&trade; configurator as follows:
+
    #### **Figure 12. Disable self test library**
 
    <img src="images/self-test-disable.png" alt="Figure 12" width="800"/>
 
-2. Connect the kit to a power analyzer such as KEYSIGHT - N6705C using a current measure header to evaluate the low-power feature of the device as shown in the following [Figure 13](#figure-13-power-analyzer-connectionfigure):
+3. Disable the debug mode (if enabled). By default, it is disabled. To enable, see the [setup the VDDA supply voltage and Debug mode](#set-up-the-vdda-supply-voltage-and-debug-mode-in-device-configurator) section. Enabling the debug mode keeps the SWD pins active in all device power modes and even during Deep Sleep. This leads to increase in power consumption.
+
+4. Connect the kit to a power analyzer such as KEYSIGHT - N6705C using a current measure header to evaluate the low-power feature of the device as shown in the following [Figure 13](#figure-13-power-analyzer-connectionfigure):
 
    #### **Figure 13. Power analyzer connection**
 
    <img src="images/psoc-4000t-kit-ammeter-setup.png" alt="Figure 13" width="800"/>
 
-3. Control the power analyzer device through the laptop using software tool called "Keysight BenchVue Advanced Power Control and Analysis".
+5. Control the power analyzer device through the laptop using software tool called "Keysight BenchVue Advanced Power Control and Analysis".
 
-4. Select the current measurement option from the instrument control setup. Then select and turn ON output channel as shown in the following [Figure 14](#figure-14-current-measurement-setup):
+6. Select the current measurement option from the instrument control setup. Then select and turn ON output channel as shown in the following [Figure 14](#figure-14-current-measurement-setup):
 
    #### **Figure 14. Current measurement setup**
 
    <img src="images/current_measurement_setup.png" alt="Figure 14" width="300"/>
 
-5. Capture the data using Data log option from the tool. The average Current Consumption is measured using cursors on each power modes as follows.
+7. Capture the data using Data log option from the tool. The average Current Consumption is measured using cursors on each power modes as follows.
 
    #### **Figure 15. Current measurement**
 
    <img src="images/power_measurement.png" alt="Figure 15" width="900"/>
 
-6. If there is touch detection on one of the sensors, the device is in Active state. Measure the device current during the active state of operation. If the refresh rate is set to 128 Hz, the approximate device current would be 309 µA when the touchpad is touched (see [Figure 16](#figure-16-power-consumption-profile-of-psoc™-4000t)).
+8. If there is touch detection on one of the sensors, the device is in Active state. Measure the device current during the active state of operation. If the refresh rate is set to 128 Hz, the approximate device current would be 309 µA when the touchpad is touched (see [Figure 16](#figure-16-power-consumption-profile-of-psoc™-4000t)).
 
    #### **Figure 16. Power consumption profile of PSoC&trade; 4000T**
 
    <img src="images/psoc_4000t_current_results.png" alt="Figure 16" width="700"/>
 
-7. If there is no touch detection on any of the sensors for some time, the CAPSENSE&trade; block moves to a state called "Active Low Refresh Rate (ALR)". If the refresh rate of this state is set to 32 Hz, the approximate device current would be 81 µA.
+9. If there is no touch detection on any of the sensors for some time, the CAPSENSE&trade; block moves to a state called "Active Low Refresh Rate (ALR)". If the refresh rate of this state is set to 32 Hz, the approximate device current would be 81 µA.
 
-8. Further inactivity on any of the sensors moves the CAPSENSE&trade; block to the low-power state i.e. Wake On Touch (WoT). The device current in this state is approximately 5 µA if the refresh rate is set to 16 Hz. 
+10. Further inactivity on any of the sensors moves the CAPSENSE&trade; block to the low-power state i.e. Wake On Touch (WoT). The device current in this state is approximately 5 µA if the refresh rate is set to 16 Hz. 
 
 The following table shows the current values measured for VDD=1.8 V:
 
@@ -344,9 +361,11 @@ This code example has the optimum tuning parameters of all the sensors. See the 
 
 3. [CE235111](https://github.com/Infineon/mtb-example-psoc4-msclp-capsense-low-power) for tuning the low-power widget of the PSoC&trade; 4000T device
 
-## Debugging
+# Debugging
 
-You can debug this project to step through the code. In the IDE, use the **\<Application Name> Debug (KitProg3_MiniProg4)** configuration in the **Quick Panel**. For details, see the "Program and Debug" section in the [Eclipse IDE for ModusToolbox&trade; software user guide](https://www.infineon.com/MTBEclipseIDEUserGuide).
+You can debug this project to step through the code. In the IDE, use the **\<Application Name> Debug (KitProg3_MiniProg4)** configuration in the **Quick Panel**. For details, see the "Program and debug" section in the [Eclipse IDE for ModusToolbox&trade; software user guide](https://www.infineon.com/MTBEclipseIDEUserGuide).
+
+By default, the debug option is disabled in the device configurator. To enable the debug option, see the [Setup VDD and Debug mode](#set-up-the-vdda-supply-voltage-and-debug-mode-in-device-configurator) section. To achieve low power consumption, it is recommended to disable it. 
 
 ## Design and implementation
 
@@ -419,7 +438,7 @@ The firmware state machine and the operation of the device in four different sta
 
 There are three onboard LEDs connected to the SPI MOSI pin of the device. The three LEDs form a daisy-chain connection and the communication happens over the serial interface to create an RGB configuration. The LED accepts a 32-bit input code, with three bytes for red, green, and blue color.
 
-### Set up the VDDA supply voltage in Device Configurator
+### Set up the VDDA supply voltage and debug mode in Device Configurator
 
 1. Open Device Configurator from the Quick Panel.
 
@@ -429,13 +448,11 @@ There are three onboard LEDs connected to the SPI MOSI pin of the device. The th
 
    <img src="images/vdda-settings.png" alt="Figure 19" width="700"/>
 
-3. By default, SWD pins are active in all device power modes. Disable debug mode to disable SWD pins and thereby reduce the power consumption as follows:
+3. By default, the debug mode is disabled for this application to reduce power consumption. Enable the debug mode to enable the SWD pins as follows:
 
-   #### **Figure 20. Disable Debug mode in the System tab of Device Configurator**
+   #### **Figure 20. Enable debug mode in the System tab of Device Configurator**
 
-   <img src="images/disable-swd.png" alt="Figure 20"/>
-
-**Note:** PSoC&trade; 4000T CAPSENSE&trade; Evaluation kit has one onboard regulator that generates 1.8 V. Check the VDDA voltage and VDDD voltage in Device Configurator - Systems tab to 1800 mV. See the kit user guide for more details.
+   <img src="images/enable_debug.png" alt="Figure 20"/>
 
 
 ### Resources and settings
@@ -497,15 +514,14 @@ Document title: *CE234752* - *PSoC&trade; 4: MSCLP robust low-power liquid-toler
  1.1.0   | Updated code example for improving liquid tolerance
  2.0.0   | Major update to support ModusToolbox&trade; v3.0. This version is not backward compatible with previous versions of ModusToolbox&trade; software.
  3.0.0   | Major update to support ModusToolbox&trade; v3.1 and the BSP changes. This version is not backward compatible with previous versions of ModusToolbox&trade; software.
+ 3.0.1   | Minor configuration and read me update
 
-------
 
-All other trademarks or registered trademarks referenced herein are the property of their respective owners.
 
 ---------------------------------------------------------
 
-© Cypress Semiconductor Corporation, 2022-2023. This document is the property of Cypress Semiconductor Corporation, an Infineon Technologies company, and its affiliates ("Cypress").  This document, including any software or firmware included or referenced in this document ("Software"), is owned by Cypress under the intellectual property laws and treaties of the United States and other countries worldwide.  Cypress reserves all rights under such laws and treaties and does not, except as specifically stated in this paragraph, grant any license under its patents, copyrights, trademarks, or other intellectual property rights.  If the Software is not accompanied by a license agreement and you do not otherwise have a written agreement with Cypress governing the use of the Software, then Cypress hereby grants you a personal, non-exclusive, nontransferable license (without the right to sublicense) (1) under its copyright rights in the Software (a) for Software provided in source code form, to modify and reproduce the Software solely for use with Cypress hardware products, only internally within your organization, and (b) to distribute the Software in binary code form externally to end users (either directly or indirectly through resellers and distributors), solely for use on Cypress hardware product units, and (2) under those claims of Cypress’s patents that are infringed by the Software (as provided by Cypress, unmodified) to make, use, distribute, and import the Software solely for use with Cypress hardware products.  Any other use, reproduction, modification, translation, or compilation of the Software is prohibited.
+© Cypress Semiconductor Corporation, 2023. This document is the property of Cypress Semiconductor Corporation, an Infineon Technologies company, and its affiliates ("Cypress").  This document, including any software or firmware included or referenced in this document ("Software"), is owned by Cypress under the intellectual property laws and treaties of the United States and other countries worldwide.  Cypress reserves all rights under such laws and treaties and does not, except as specifically stated in this paragraph, grant any license under its patents, copyrights, trademarks, or other intellectual property rights.  If the Software is not accompanied by a license agreement and you do not otherwise have a written agreement with Cypress governing the use of the Software, then Cypress hereby grants you a personal, non-exclusive, nontransferable license (without the right to sublicense) (1) under its copyright rights in the Software (a) for Software provided in source code form, to modify and reproduce the Software solely for use with Cypress hardware products, only internally within your organization, and (b) to distribute the Software in binary code form externally to end users (either directly or indirectly through resellers and distributors), solely for use on Cypress hardware product units, and (2) under those claims of Cypress's patents that are infringed by the Software (as provided by Cypress, unmodified) to make, use, distribute, and import the Software solely for use with Cypress hardware products.  Any other use, reproduction, modification, translation, or compilation of the Software is prohibited.
 <br>
-TO THE EXTENT PERMITTED BY APPLICABLE LAW, CYPRESS MAKES NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, WITH REGARD TO THIS DOCUMENT OR ANY SOFTWARE OR ACCOMPANYING HARDWARE, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  No computing device can be absolutely secure.  Therefore, despite security measures implemented in Cypress hardware or software products, Cypress shall have no liability arising out of any security breach, such as unauthorized access to or use of a Cypress product. CYPRESS DOES NOT REPRESENT, WARRANT, OR GUARANTEE THAT CYPRESS PRODUCTS, OR SYSTEMS CREATED USING CYPRESS PRODUCTS, WILL BE FREE FROM CORRUPTION, ATTACK, VIRUSES, INTERFERENCE, HACKING, DATA LOSS OR THEFT, OR OTHER SECURITY INTRUSION (collectively, "Security Breach").  Cypress disclaims any liability relating to any Security Breach, and you shall and hereby do release Cypress from any claim, damage, or other liability arising from any Security Breach.  In addition, the products described in these materials may contain design defects or errors known as errata which may cause the product to deviate from published specifications. To the extent permitted by applicable law, Cypress reserves the right to make changes to this document without further notice. Cypress does not assume any liability arising out of the application or use of any product or circuit described in this document. Any information provided in this document, including any sample design information or programming code, is provided only for reference purposes.  It is the responsibility of the user of this document to properly design, program, and test the functionality and safety of any application made of this information and any resulting product.  "High-Risk Device" means any device or system whose failure could cause personal injury, death, or property damage.  Examples of High-Risk Devices are weapons, nuclear installations, surgical implants, and other medical devices.  "Critical Component" means any component of a High-Risk Device whose failure to perform can be reasonably expected to cause, directly or indirectly, the failure of the High-Risk Device, or to affect its safety or effectiveness.  Cypress is not liable, in whole or in part, and you shall and hereby do release Cypress from any claim, damage, or other liability arising from any use of a Cypress product as a Critical Component in a High-Risk Device. You shall indemnify and hold Cypress, including its affiliates, and its directors, officers, employees, agents, distributors, and assigns harmless from and against all claims, costs, damages, and expenses, arising out of any claim, including claims for product liability, personal injury or death, or property damage arising from any use of a Cypress product as a Critical Component in a High-Risk Device. Cypress products are not intended or authorized for use as a Critical Component in any High-Risk Device except to the limited extent that (i) Cypress’s published data sheet for the product explicitly states Cypress has qualified the product for use in a specific High-Risk Device, or (ii) Cypress has given you advance written authorization to use the product as a Critical Component in the specific High-Risk Device and you have signed a separate indemnification agreement.
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, CYPRESS MAKES NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, WITH REGARD TO THIS DOCUMENT OR ANY SOFTWARE OR ACCOMPANYING HARDWARE, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  No computing device can be absolutely secure.  Therefore, despite security measures implemented in Cypress hardware or software products, Cypress shall have no liability arising out of any security breach, such as unauthorized access to or use of a Cypress product. CYPRESS DOES NOT REPRESENT, WARRANT, OR GUARANTEE THAT CYPRESS PRODUCTS, OR SYSTEMS CREATED USING CYPRESS PRODUCTS, WILL BE FREE FROM CORRUPTION, ATTACK, VIRUSES, INTERFERENCE, HACKING, DATA LOSS OR THEFT, OR OTHER SECURITY INTRUSION (collectively, "Security Breach").  Cypress disclaims any liability relating to any Security Breach, and you shall and hereby do release Cypress from any claim, damage, or other liability arising from any Security Breach.  In addition, the products described in these materials may contain design defects or errors known as errata which may cause the product to deviate from published specifications. To the extent permitted by applicable law, Cypress reserves the right to make changes to this document without further notice. Cypress does not assume any liability arising out of the application or use of any product or circuit described in this document. Any information provided in this document, including any sample design information or programming code, is provided only for reference purposes.  It is the responsibility of the user of this document to properly design, program, and test the functionality and safety of any application made of this information and any resulting product.  "High-Risk Device" means any device or system whose failure could cause personal injury, death, or property damage.  Examples of High-Risk Devices are weapons, nuclear installations, surgical implants, and other medical devices.  "Critical Component" means any component of a High-Risk Device whose failure to perform can be reasonably expected to cause, directly or indirectly, the failure of the High-Risk Device, or to affect its safety or effectiveness.  Cypress is not liable, in whole or in part, and you shall and hereby do release Cypress from any claim, damage, or other liability arising from any use of a Cypress product as a Critical Component in a High-Risk Device. You shall indemnify and hold Cypress, including its affiliates, and its directors, officers, employees, agents, distributors, and assigns harmless from and against all claims, costs, damages, and expenses, arising out of any claim, including claims for product liability, personal injury or death, or property damage arising from any use of a Cypress product as a Critical Component in a High-Risk Device. Cypress products are not intended or authorized for use as a Critical Component in any High-Risk Device except to the limited extent that (i) Cypress's published data sheet for the product explicitly states Cypress has qualified the product for use in a specific High-Risk Device, or (ii) Cypress has given you advance written authorization to use the product as a Critical Component in the specific High-Risk Device and you have signed a separate indemnification agreement.
 <br>
-Cypress, the Cypress logo, and combinations thereof, WICED, ModusToolbox, PSoC, CapSense, EZ-USB, F-RAM, and Traveo are trademarks or registered trademarks of Cypress or a subsidiary of Cypress in the United States or in other countries. For a more complete list of Cypress trademarks, visit www.infineon.com. Other names and brands may be claimed as property of their respective owners.
+Cypress, the Cypress logo, and combinations thereof, ModusToolbox, PSoC, CAPSENSE, EZ-USB, F-RAM, and TRAVEO are trademarks or registered trademarks of Cypress or a subsidiary of Cypress in the United States or in other countries. For a more complete list of Cypress trademarks, visit www.infineon.com. Other names and brands may be claimed as property of their respective owners.
