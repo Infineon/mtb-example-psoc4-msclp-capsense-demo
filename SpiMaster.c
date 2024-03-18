@@ -4,7 +4,7 @@
  * Description: This file contains function definitions for SPI Master.
  *
 *******************************************************************************
-* Copyright 2021-2022, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2021-2023, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -80,7 +80,8 @@ uint32_t init_spi_master(void)
 
     /* Configure the SPI block */
 
-    result = Cy_SCB_SPI_Init(CYBSP_MASTER_SPI_HW, &CYBSP_MASTER_SPI_config, &CYBSP_MASTER_SPI_context);
+    result = Cy_SCB_SPI_Init(CYBSP_MASTER_SPI_HW, &CYBSP_MASTER_SPI_config,
+                             &CYBSP_MASTER_SPI_context);
     if ( result != CY_SCB_SPI_SUCCESS)
     {
         return INIT_FAILURE;
@@ -98,7 +99,8 @@ uint32_t init_spi_master(void)
     };
 
     /* Hook interrupt service routine and enable interrupt */
-    sysSpistatus = Cy_SysInt_Init(&CYBSP_MASTER_SPI_SCB_IRQ_cfg, &CYBSP_MASTER_SPI_Interrupt);
+    sysSpistatus = Cy_SysInt_Init(&CYBSP_MASTER_SPI_SCB_IRQ_cfg,
+                                 &CYBSP_MASTER_SPI_Interrupt);
 
     if (sysSpistatus != CY_SYSINT_SUCCESS)
     {

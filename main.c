@@ -59,7 +59,8 @@
 /* Enable this, if Tuner needs to be enabled */
 #define ENABLE_TUNER                            (1u)
 
-/* Define the Refresh rate (in Hz) in three different application states (of CAPSENSE&trade;)*/
+/* Define the Refresh rate (in Hz) in three different application states 
+*  (of CAPSENSE&trade;) */
 #define ACTIVE_MODE_REFRESH_RATE                (128u)
 #define ACTIVE_LOW_REFRESH_RATE                 (32u)
 #define LIQUID_ACTIVE_REFRESH_RATE              (16u)
@@ -70,7 +71,8 @@
 
 /* Active mode Scan time calculated in us ~= 356us */
 #define ACTIVE_MODE_FRAME_SCAN_TIME             (356u)
-/* Active mode Processing time in us ~= 143us with Serial LED and Tuner disabled*/
+/* Active mode Processing time in us ~= 143us with Serial LED and Tuner 
+*  disabled */
 #define ACTIVE_MODE_PROCESS_TIME                (142u)
 
 /* ALR mode Scan time calculated in us ~= 356us */
@@ -80,7 +82,8 @@
 
 /* Liquid Active mode Scan time calculated in us ~= 337us */
 #define LIQUID_ACTIVE_MODE_FRAME_SCAN_TIME      (337u)
-/* Liquid Active mode Processing time in us ~= 130us with Serial LED and Tuner disabled*/
+/* Liquid Active mode Processing time in us ~= 130us with Serial LED and Tuner 
+*  disabled */
 #define LIQUID_ACTIVE_MODE_PROCESS_TIME         (130u)
 
 /*******************************************************************************
@@ -89,7 +92,7 @@
 #define CAPSENSE_MSC0_INTR_PRIORITY             (3u)
 #define CY_ASSERT_FAILED                        (0u)
 
-/* EZI2C interrupt priority must be higher than CAPSENSE&trade; interrupt. */
+/* EZI2C interrupt priority must be higher than CAPSENSE&trade; interrupt */
 #define EZI2C_INTR_PRIORITY                     (2u)
 
 /* Define the Reset state of Timeout counter */
@@ -122,12 +125,12 @@
 #endif
 
 /* Define Time out of different applications states depending upon
- * number of scans and corresponding refresh rate */
+*  number of scans and corresponding refresh rate */
 #define ACTIVE_MODE_TIMEOUT              (ACTIVE_MODE_REFRESH_RATE * ACTIVE_MODE_TIMEOUT_IN_SEC)
 #define ACTIVE_LOW_REFRESH_TIMEOUT       (ACTIVE_LOW_REFRESH_RATE * ACTIVE_LOW_REFRESH_TIMEOUT_IN_SEC)
 
 /* Define the macros to check sensor status and liquid presence state
- * indicating touch / no-touch status of all sensors */
+*  indicating touch / no-touch status of all sensors */
 #define SENSOR_ACTIVE                           (1u)
 
 /* Define the macros specific for conditions to check liquid active state */
@@ -137,9 +140,7 @@
 #define LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE   (CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_FIRST_SLOT_ID)
 #define NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE      ((LAST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE - FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE) + 1u)
 
-/*****************************************************************************
-* Finite state machine for different CAPSENSE&trade; operating states
-*****************************************************************************/
+/* Finite state machine for different CAPSENSE&trade; operating states */
 typedef enum
 {
     ACTIVE_STATE = 0x01u,                       /* Active mode - All the sensors are scanned in this state
@@ -153,6 +154,7 @@ typedef enum
                                                  * in this state and other sensors are disabled
                                                  */
 } CAPSENSE_STATE;
+
 
 /*******************************************************************************
 * Function Prototypes
@@ -174,6 +176,7 @@ void led_control();
 void register_callback(void);
 cy_en_syspm_status_t deep_sleep_callback(cy_stc_syspm_callback_params_t *callbackParams,
                                          cy_en_syspm_callback_mode_t mode);
+
 
 /*******************************************************************************
 * Global Definitions
@@ -263,6 +266,9 @@ cy_stc_syspm_callback_t deepSleepCb =
 *  - switch to different CAPSENSE&trade; states
 *  - serial RGB LED for touch indication
 *
+* Parameters:
+*  void
+*
 * Return:
 *  int
 *
@@ -299,7 +305,8 @@ int main(void)
     #else
 
     /* SPI pins drive mode to Analog HighZ */
-    Cy_GPIO_SetDrivemode(CYBSP_SERIAL_LED_PORT, CYBSP_SERIAL_LED_NUM, CY_GPIO_DM_ANALOG);
+    Cy_GPIO_SetDrivemode(CYBSP_SERIAL_LED_PORT, CYBSP_SERIAL_LED_NUM,
+                         CY_GPIO_DM_ANALOG);
     #endif
 
     /* Initialize EZI2C */
@@ -311,7 +318,8 @@ int main(void)
     /* Initialize MSC CAPSENSE&trade; */
     initialize_capsense();
 
-    /* Initialization of CAPSENSE&trade; state, timeout counter and MSCLP timer configuration  */
+    /* Initialization of CAPSENSE&trade; state, timeout counter and MSCLP timer 
+    *  configuration */
     capsense_state = ACTIVE_STATE;
     timeout_counter = TIMER_RESET;
 
@@ -321,11 +329,10 @@ int main(void)
     Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
     capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
 
-/*******************************************************************************
-* Start the state-machine to capture the different states of operation.
-* This is a state-machine implemented to capture 4 different states
-* of CAPSENSE&trade; block for this specific application.
-*******************************************************************************/
+    /* Start the state-machine to capture the different states of operation.
+    *  This is a state-machine implemented to capture 4 different states
+    *  of CAPSENSE&trade; block for this specific application */
+
     for (;;)
     {
         switch(capsense_state)
@@ -343,7 +350,8 @@ int main(void)
 
                     Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                    /* This is a place where all interrupt handlers will be executed */
+                    /* This is a place where all interrupt handlers will be 
+                    *  executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
                 }
 
@@ -351,20 +359,22 @@ int main(void)
 
                 Cy_CapSense_ProcessAllWidgets(&cy_capsense_context);
 
-                /* Scan, process and check the status of the all Active mode sensors */
+                /* Scan, process and check the status of the all Active mode 
+                *  sensors */
                 if (Cy_CapSense_IsAnyWidgetActive(&cy_capsense_context))
                 {
-                    /* The function 'capsense_liquid_active_state_check' checks different sensor signals
-                    * to identify presence of liquid on the sensors. If this returns True, the application
-                    * changes from ACTIVE state to LIQUID ACTIVE state
-                    */
+                    /* The function 'capsense_liquid_active_state_check' checks 
+                    *  different sensor signals to identify presence of liquid 
+                    *  on the sensors. If this returns True, the application
+                    *  changes from ACTIVE state to LIQUID ACTIVE state */
                     capsense_liquid_active_state_status = capsense_liquid_active_state_check();
 
                     if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
                     {
                         capsense_state = LIQUID_ACTIVE_STATE;
                         timeout_counter = TIMER_RESET;
-                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER, &cy_capsense_context);
+                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER,
+                                                         &cy_capsense_context);
                     }
                 }
 
@@ -372,19 +382,20 @@ int main(void)
                 {
                     timeout_counter++;
 
-                    /* if there is no touch and the timeout happens, change the
-                    * state to ACTIVE_LOW_REFRESH_RATE*/
+                    /* If there is no touch and the timeout happens, change the
+                    *  state to ACTIVE_LOW_REFRESH_RATE */
                     if (ACTIVE_MODE_TIMEOUT < timeout_counter)
                     {
                         capsense_state = ACTIVE_LOW_REFRESH_RATE_STATE;
                         timeout_counter = TIMER_RESET;
-                        Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER, &cy_capsense_context);
+                        Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER,
+                                                         &cy_capsense_context);
                     }
                 }
 
                 break;
             }
-            /* end of ACTIVE_STATE */
+            /* End of ACTIVE_STATE */
 
             /* CAPSENSE&trade; state: Active Low Refresh Rate state */
             case ACTIVE_LOW_REFRESH_RATE_STATE :
@@ -399,7 +410,8 @@ int main(void)
 
                     Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                    /* This is a place where all interrupt handlers will be executed */
+                    /* This is a place where all interrupt handlers will be
+                    *  executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
                 }
 
@@ -407,27 +419,30 @@ int main(void)
 
                 Cy_CapSense_ProcessAllWidgets(&cy_capsense_context);
 
-                /* Scan, process and check the status of the all Active mode sensors */
+                /* Scan, process and check the status of the all Active mode 
+                *  sensors */
                 if (Cy_CapSense_IsAnyWidgetActive(&cy_capsense_context))
                 {
-                    /* The function 'capsense_liquid_active_state_check' checks different sensor signals
-                    * to identify presence of liquid on the sensors. If this returns True, the application
-                    * changes from ACTIVE state to LIQUID ACTIVE state
-                    */
+                    /* The function 'capsense_liquid_active_state_check' checks
+                    *  different sensor signals to identify presence of liquid
+                    *  on the sensors. If this returns True, the application
+                    *  changes from ACTIVE state to LIQUID ACTIVE state */
                     capsense_liquid_active_state_status = capsense_liquid_active_state_check();
 
                     if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
                     {
                         capsense_state = LIQUID_ACTIVE_STATE;
                         timeout_counter = TIMER_RESET;
-                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER, &cy_capsense_context);
+                        Cy_CapSense_ConfigureMsclpTimer(LIQUID_ACTIVE_REFRESH_TIMER,
+                                                         &cy_capsense_context);
                     }
 
                     else
                     {
                         capsense_state = ACTIVE_STATE;
                         timeout_counter = TIMER_RESET;
-                        Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+                        Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER,
+                                                         &cy_capsense_context);
                     }
                 }
 
@@ -435,8 +450,8 @@ int main(void)
                 {
                     timeout_counter++;
 
-                    /* if there is no touch and the timeout happens, change the
-                    * state to WAKE_ON_TOUCH_STATE.*/
+                    /* If there is no touch and the timeout happens, change the
+                    *  state to WAKE_ON_TOUCH_STATE */
                     if (ACTIVE_LOW_REFRESH_TIMEOUT < timeout_counter)
                     {
                         capsense_state = WAKE_ON_TOUCH_STATE;
@@ -446,9 +461,9 @@ int main(void)
 
                 break;
             }
-            /* end of ACTIVE_LOW_REFRESH_RATE */
+            /* End of ACTIVE_LOW_REFRESH_RATE */
 
-            /* CAPSENSE&trade; state: Wake On Touch  */
+            /* CAPSENSE&trade; state: Wake On Touch */
             case WAKE_ON_TOUCH_STATE :
             {
                 Cy_CapSense_ScanAllLpSlots(&cy_capsense_context);
@@ -461,43 +476,47 @@ int main(void)
 
                     Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                    /* This is a place where all interrupt handlers will be executed */
+                    /* This is a place where all interrupt handlers will be
+                    *  executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
                 }
 
                 Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                /* if there is any touch event, change the state to
-                *  ACTIVE_STATE.*/
+                /* If there is any touch event, change the state to
+                *  ACTIVE_STATE */
                 if (Cy_CapSense_IsAnyLpWidgetActive(&cy_capsense_context))
                 {
                     capsense_state = ACTIVE_STATE;
                     timeout_counter = TIMER_RESET;
-                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER,
+                                                     &cy_capsense_context);
                 }
 
-                /* if there is no touch and the timeout happens, change the
-                *  state to ACTIVE_LOW_REFRESH_RATE.*/
+                /* If there is no touch and the timeout happens, change the
+                *  state to ACTIVE_LOW_REFRESH_RATE */
                 else
                 {
                     capsense_state = ACTIVE_LOW_REFRESH_RATE_STATE;
                     timeout_counter = TIMER_RESET;
-                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER, &cy_capsense_context);
+                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_LOW_REFRESH_TIMER,
+                                                     &cy_capsense_context);
                 }
 
                 break;
             }
-            /* end of "WAKE_ON_TOUCH_STATE" */
+            /* End of "WAKE_ON_TOUCH_STATE" */
 
-            /* CAPSENSE&trade; state: LIQUID_ACTIVE_STATE
-             * This is custom state for scanning guard sensor(s) only when large volume of
-             * liquid present on the sensors
-             *  */
+            /* CAPSENSE&trade; state: LIQUID_ACTIVE_STATE. This is custom state
+            *  for scanning guard sensor(s) only when large volume of liquid 
+            *  present on the sensors */
 
             case LIQUID_ACTIVE_STATE :
             {
-                /* Scan only the slot(s) of the guard sensor(s) that can indicate presence of liquid */
-                Cy_CapSense_ScanSlots(FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE, NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE, &cy_capsense_context);
+                /* Scan only the slot(s) of the guard sensor(s) that can 
+                *  indicate presence of liquid */
+                Cy_CapSense_ScanSlots(FIRST_SLOT_SCAN_IN_LIQUID_ACTIVE_STATE, 
+                     NUM_SLOTS_SCAN_LIQUID_ACTIVE_STATE, &cy_capsense_context);
 
                 interruptStatus = Cy_SysLib_EnterCriticalSection();
 
@@ -507,18 +526,23 @@ int main(void)
 
                     Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                    /* This is a place where all interrupt handlers will be executed */
+                    /* This is a place where all interrupt handlers will be 
+                    *  executed */
                     interruptStatus = Cy_SysLib_EnterCriticalSection();
                 }
 
                 Cy_SysLib_ExitCriticalSection(interruptStatus);
 
-                /* Process only the touchpad and guard sensor(s) widget to detect the presence of liquid */
-                Cy_CapSense_ProcessWidget(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context);
-                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID, &cy_capsense_context);
-                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_WDGT_ID, &cy_capsense_context);
+                /* Process only the touchpad and guard sensor(s) widget to 
+                *  detect the presence of liquid */
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_TOUCHPAD_WDGT_ID,
+                                         &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_LOOP_SENSOR_WDGT_ID,
+                                         &cy_capsense_context);
+                Cy_CapSense_ProcessWidget(CY_CAPSENSE_GUARD_MUTUAL_CAP_SENSOR_WDGT_ID,
+                                         &cy_capsense_context);
 
-                /* Check the liquid active condition is still valid or not. */
+                /* Check the liquid active condition is still valid or not */
                 capsense_liquid_active_state_status = capsense_liquid_active_state_check();
 
                 if(capsense_liquid_active_state_status == LIQUID_STATE_ACTIVE)
@@ -532,45 +556,48 @@ int main(void)
                     timeout_counter = TIMER_RESET;
                     capsense_liquid_active_state_status = LIQUID_STATE_INACTIVE;
                     Cy_CapSense_InitializeAllStatuses(&cy_capsense_context);
-                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER, &cy_capsense_context);
+                    Cy_CapSense_ConfigureMsclpTimer(ACTIVE_MODE_TIMER,
+                                                     &cy_capsense_context);
                 }
 
                 break;
             }
-            /* end of LIQUID ACTIVE_STATE */
+            /* End of LIQUID ACTIVE_STATE */
 
             default:
             {
-                /**  Unknown power mode state. Unexpected situation.  **/
+                /* Unknown power mode state. Unexpected situation */
                 CY_ASSERT(CY_ASSERT_FAILED);
 
                 break;
             }
 
         }
-        /* end of switch */
+        /* End of switch */
 
         #if ENABLE_SERIAL_LED
-        /* Serial LED control for showing the CAPSENSE&trade; touch status (feedback) */
+        /* Serial LED control for showing the CAPSENSE&trade; touch status 
+        *  (feedback) */
         led_control();
         #endif
 
         #if ENABLE_TUNER
-        /* Establishes synchronized communication with the CAPSENSE&trade; Tuner tool */
+        /* Establishes synchronized communication with the CAPSENSE&trade; 
+        *  Tuner tool */
         Cy_CapSense_RunTuner(&cy_capsense_context);
         #endif
     }
-    /* end of for loop */
+    /* End of for loop */
 }
-/* end of main */
+/* End of main */
 
 
 /*******************************************************************************
 * Function Name: initialize_capsense
 ********************************************************************************
 * Summary:
-*  This function initializes the CAPSENSE&trade; and configures the CAPSENSE&trade;
-*  interrupt.
+*  This function initializes the CAPSENSE&trade; and configures the 
+*  CAPSENSE&trade; interrupt.
 *
 *******************************************************************************/
 static void initialize_capsense(void)
@@ -584,12 +611,12 @@ static void initialize_capsense(void)
         .intrPriority = CAPSENSE_MSC0_INTR_PRIORITY,
     };
 
-    /* Capture the MSC HW block and initialize it to the default state. */
+    /* Capture the MSC HW block and initialize it to the default state */
     status = Cy_CapSense_Init(&cy_capsense_context);
 
-    /* Capture the MSC HW block and initialize it to the default state. */
+    /* Capture the MSC HW block and initialize it to the default state */
     cy_capsense_context.ptrInternalContext->ptrEODsInitCallback =
-            inactive_sensors_reconfiguration;
+             inactive_sensors_reconfiguration;
 
     if (CY_CAPSENSE_STATUS_SUCCESS == status)
     {
@@ -598,15 +625,15 @@ static void initialize_capsense(void)
         NVIC_ClearPendingIRQ(capsense_msc0_interrupt_config.intrSrc);
         NVIC_EnableIRQ(capsense_msc0_interrupt_config.intrSrc);
 
-        /* Initialize the CAPSENSE&trade; firmware modules. */
+        /* Initialize the CAPSENSE&trade; firmware modules */
         status = Cy_CapSense_Enable(&cy_capsense_context);
     }
 
     if (status != CY_CAPSENSE_STATUS_SUCCESS)
     {
         /* This status could fail before tuning the sensors correctly.
-         * Ensure that this function passes after the CAPSENSE&trade; sensors are tuned
-         * as per procedure give in the Readme.md file */
+        *  Ensure that this function passes after the CAPSENSE&trade; sensors 
+        *  are tuned as per procedure give in the Readme.md file */
     }
 }
 
@@ -635,12 +662,12 @@ static void capsense_msc0_isr(void)
 *  sensor state to be defined in the Cy_CapSense_SlotPinState API and to be
 *  initialized in initialize_capsense.
 *
-*  Parameters:
+* Parameters:
 *  The pointer to the CAPSENSE&trade; context structure
 *  \ref cy_stc_capsense_context_t.
 *
 * Return:
-* void
+*  void
 *
 *******************************************************************************/
 void inactive_sensors_reconfiguration(void * context)
@@ -648,9 +675,9 @@ void inactive_sensors_reconfiguration(void * context)
     uint32_t slotId, touchpad_scan_first_slot_Id, touchpad_scan_last_slot_Id;
 
     /* when the Touchpad is being scanned in slot # 1 to 9.
-    * proximity loop is set to ground.
-    * Other Inactive sensors (Button and touchpad) are driven as
-    * active shield (as set in the design.cycapsense).
+    *  proximity loop is set to ground.
+    *  Other Inactive sensors (Button and touchpad) are driven as
+    *  active shield (as set in the design.cycapsense).
     */
     touchpad_scan_first_slot_Id = 1u;
     touchpad_scan_last_slot_Id = 9u;
@@ -666,11 +693,12 @@ void inactive_sensors_reconfiguration(void * context)
 
 }
 
+
 /*******************************************************************************
 * Function Name: initialize_capsense_tuner
 ********************************************************************************
 * Summary:
-* EZI2C module to communicate with the CAPSENSE&trade; Tuner tool.
+*  EZI2C module to communicate with the CAPSENSE&trade; Tuner tool.
 *
 *******************************************************************************/
 static void initialize_capsense_tuner(void)
@@ -695,11 +723,10 @@ static void initialize_capsense_tuner(void)
     Cy_SysInt_Init(&ezi2c_intr_config, ezi2c_isr);
     NVIC_EnableIRQ(ezi2c_intr_config.intrSrc);
 
-    /* Set the CAPSENSE&trade; data structure as the I2C buffer to be exposed to the
-     * master on primary slave address interface. Any I2C host tools such as
-     * the Tuner or the Bridge Control Panel can read this buffer but you can
-     * connect only one tool at a time.
-     */
+    /* Set the CAPSENSE&trade; data structure as the I2C buffer to be exposed 
+    *  to the master on primary slave address interface. Any I2C host tools such
+    *  as the Tuner or the Bridge Control Panel can read this buffer but you can
+    *  connect only one tool at a time */
     Cy_SCB_EZI2C_SetBuffer1(CYBSP_EZI2C_HW, (uint8_t *)&cy_capsense_tuner,
                             sizeof(cy_capsense_tuner), sizeof(cy_capsense_tuner),
                             &ezi2c_context);
@@ -738,26 +765,27 @@ static void ezi2c_isr(void)
 void led_control()
 {
     /* Brightness of each LED is represented by 0 to 255,
-    * where 0 indicates LED in OFF state and 255 indicate maximum
-    * brightness of an LED
-    */
+    *  where 0 indicates LED in OFF state and 255 indicate maximum
+    *  brightness of an LED */
     volatile uint8_t brightness_max = 255u;
     volatile uint8_t brightness_min = 0u;
 
     uint8_t touchposition_x, touchposition_y ;
 
     cy_stc_capsense_touch_t *panelTouch =
-            Cy_CapSense_GetTouchInfo(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context);
+            Cy_CapSense_GetTouchInfo(CY_CAPSENSE_TOUCHPAD_WDGT_ID,
+                                     &cy_capsense_context);
 
     touchposition_x = panelTouch->ptrPosition->x;
     touchposition_y = panelTouch->ptrPosition->y;
 
-/*LED1 and LED3 indicate the status of the 'CAPSENSE&trade; button' and 'Touchpad' */
+    /* LED1 and LED3 indicate the status of the 'CAPSENSE&trade; button' and 
+    *  'Touchpad' */
 
-/*******************************************************************************
-* If CAPSENSE&trade; button is active, Turn On LED1 with color Blue (Fixed intensity)
-*******************************************************************************/
-    if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON_WDGT_ID, &cy_capsense_context))
+    /* If CAPSENSE&trade; button is active, Turn On LED1 with color Blue
+    *  (Fixed intensity) */
+    if (SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON_WDGT_ID,
+                                                     &cy_capsense_context))
     {
         led_context.led_num[LED1].color_red = brightness_min;
         led_context.led_num[LED1].color_green = brightness_min;
@@ -768,11 +796,8 @@ void led_control()
         led_context.led_num[LED3].color_blue = brightness_min;
     }
 
-/*******************************************************************************
-* If the Touchpad is active, Turn On LED1 and LED3
-* with Green color, and vary the intensity of the LEDs as per the finger
-* position reported
-*******************************************************************************/
+    /* If the Touchpad is active, Turn On LED1 and LED3 with Green color, and vary
+    *  the intensity of the LEDs as per the finger position reported */
     else if ((SENSOR_ACTIVE == Cy_CapSense_IsWidgetActive(CY_CAPSENSE_TOUCHPAD_WDGT_ID, &cy_capsense_context)) &&
             (capsense_liquid_active_state_status == LIQUID_STATE_INACTIVE))
     {
@@ -785,9 +810,7 @@ void led_control()
         led_context.led_num[LED3].color_blue = brightness_min;
     }
 
-/*******************************************************************************
-* Default, all the LEDs are turned off
-********************************************************************************/
+    /* Default, all the LEDs are turned off */
     else
     {
         led_context.led_num[LED1].color_red = brightness_min;
@@ -807,6 +830,7 @@ void led_control()
 }
 #endif
 /* ENABLE_SERIAL_LED */
+
 
 /*******************************************************************************
 * Function Name: register_callback
@@ -836,6 +860,7 @@ void register_callback(void)
     Cy_SysPm_RegisterCallback(&deepSleepCb);
 }
 
+
 /*******************************************************************************
 * Function Name: deep_sleep_callback
 ********************************************************************************
@@ -845,7 +870,8 @@ void register_callback(void)
 * And change the SPI GPIOs to highZ while transition to deep-sleep and vice-versa
 *
 * Parameters:
-*  callbackParams: The pointer to the callback parameters structure cy_stc_syspm_callback_params_t.
+*  callbackParams: The pointer to the callback parameters structure 
+*  cy_stc_syspm_callback_params_t.
 *  mode: Callback mode, see cy_en_syspm_callback_mode_t
 *
 * Return:
@@ -873,7 +899,8 @@ cy_en_syspm_status_t deep_sleep_callback(
 
             #if ENABLE_SERIAL_LED
             /* SPI pins drive mode to Analog HighZ */
-            Cy_GPIO_SetDrivemode(CYBSP_SPI_MOSI_PORT,CYBSP_SPI_MOSI_PIN,CY_GPIO_DM_ANALOG);
+            Cy_GPIO_SetDrivemode(CYBSP_SPI_MOSI_PORT,CYBSP_SPI_MOSI_PIN,
+                                 CY_GPIO_DM_ANALOG);
             #endif
 
             ret_val = CY_SYSPM_SUCCESS;
@@ -883,7 +910,8 @@ cy_en_syspm_status_t deep_sleep_callback(
 
             #if ENABLE_SERIAL_LED
             /* SPI pins drive mode to Strong */
-            Cy_GPIO_SetDrivemode(CYBSP_SPI_MOSI_PORT,CYBSP_SPI_MOSI_PIN,CY_GPIO_DM_STRONG_IN_OFF);
+            Cy_GPIO_SetDrivemode(CYBSP_SPI_MOSI_PORT,CYBSP_SPI_MOSI_PIN,
+                                 CY_GPIO_DM_STRONG_IN_OFF);
             #endif
 
             ret_val = CY_SYSPM_SUCCESS;
@@ -896,5 +924,6 @@ cy_en_syspm_status_t deep_sleep_callback(
     }
     return ret_val;
 }
+
 
 /* [] END OF FILE */
